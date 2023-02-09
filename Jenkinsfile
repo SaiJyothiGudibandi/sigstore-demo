@@ -5,7 +5,7 @@ pipeline {
         stage('Docker Build') {
             steps {
                 sh 'ls -al'
-//                 sh 'mvn --version'
+                sh 'docker build -t sigstore-demo-image:1.0.0 .'
             }
         }
     }
