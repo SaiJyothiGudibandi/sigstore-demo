@@ -5,7 +5,7 @@ pipeline {
         
         stage('Code Build') {
             steps {
-                dir(src/){
+                dir("src/"){
                     sh 'mvn clean install'
                 }
             }
