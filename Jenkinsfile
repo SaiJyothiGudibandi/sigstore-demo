@@ -61,7 +61,7 @@ pipeline {
         stage('Helm Build') {
             steps {
                 echo("----- BEGIN Helm Build -----")
-                dir("helm-chart/"){
+                dir("mychart/"){
                     sh("helm package .")
                 }
                 def helm_build_metaData = ["environment" : "${env.BRANCH_NAME}"
