@@ -9,8 +9,8 @@ pipeline {
                 dir("src/"){
                     echo("----- BEGIN Code Build -----")
                     sh 'mvn clean install'
-                    def code_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                    createMetadataFile("Code-Build", code_build_metaData)
+//                     def code_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+//                     createMetadataFile("Code-Build", code_build_metaData)
                     echo("----- COMPLETED Code Build -----")
                 }
             }
@@ -20,8 +20,8 @@ pipeline {
             steps {
                 echo("----- BEGIN Sonar Scan -----")
                 echo("Sonar Scan is in progress")
-                def sonar_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                createMetadataFile("Sonar-Scan", sonar_metaData)
+//                 def sonar_metaData = ["environment" : "${env.BRANCH_NAME}"]
+//                 createMetadataFile("Sonar-Scan", sonar_metaData)
                 echo("----- COMPLETED Sonar Scan -----")
             }
         }
@@ -30,8 +30,8 @@ pipeline {
             steps {
                 echo("----- BEGIN BlackDuck Scan-----")
                 echo("BlackDuck Scan is in progress")
-                def blackduck_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                createMetadataFile("BlackDuck-Scan", blackduck_metaData)
+//                 def blackduck_metaData = ["environment" : "${env.BRANCH_NAME}"]
+//                 createMetadataFile("BlackDuck-Scan", blackduck_metaData)
                 echo("----- COMPLETED BlackDuck Scan-----")
             }
         }
@@ -40,8 +40,8 @@ pipeline {
             steps {
                 echo("----- BEGIN Docker Build -----")
                 sh 'docker build -t kartikjena33/sigstore-demo-image:1.0.0 .'
-                def docker_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                createMetadataFile("Docker-Build", docker_build_metaData)
+//                 def docker_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+//                 createMetadataFile("Docker-Build", docker_build_metaData)
                 echo("----- COMPLETED Docker Build -----")
             }
         }
@@ -51,8 +51,8 @@ pipeline {
                 echo("----- BEGIN Docker Publish-----")
                 sh 'ls -al'
 //                 sh 'docker push kartikjena33/sigstore-demo-image:1.0.0 .'
-                def docker_publish_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                createMetadataFile("Docker-Build", docker_publish_metaData)
+//                 def docker_publish_metaData = ["environment" : "${env.BRANCH_NAME}"]
+//                 createMetadataFile("Docker-Build", docker_publish_metaData)
 //                 cosignAttest(metaDataFile, imageName)
                 echo("----- COMPLETED Docker Publish-----")
             }
@@ -65,7 +65,7 @@ pipeline {
                     sh("helm package .")
                 }
                 def helm_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                createMetadataFile("Helm-Build", helm_build_metaData)
+//                 createMetadataFile("Helm-Build", helm_build_metaData)
                 echo("----- COMPLETED Helm Build -----")
             }
         }
@@ -74,7 +74,7 @@ pipeline {
             steps {
                 echo("----- BEGIN Helm Publish -----")
                 def helm_publish_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                createMetadataFile("Helm-Build", helm_publish_metaData)
+//                 createMetadataFile("Helm-Build", helm_publish_metaData)
                 echo("----- COMPLETED Helm Publish -----")
             }
         }
