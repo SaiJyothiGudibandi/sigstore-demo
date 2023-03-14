@@ -92,7 +92,7 @@ pipeline {
 }
 
 
-def createMetadataFile(String stageName, Map metaData) {
+def createMetadataFile(stageName, metaData) {
     sh("ls -al")
     sh("pwd")
     stageName = stageName.replaceAll("[^a-zA-Z0-9-]+", "-").toLowerCase()
