@@ -8,7 +8,6 @@ pipeline {
                 sh("mkdir -p cosign-metadatafiles")
                 dir("src/"){
                     echo("----- BEGIN Code Build -----")
-                    sh 'yum -y install mvn'
                     sh 'mvn clean install'
 //                     def code_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
 //                     createMetadataFile("Code-Build", code_build_metaData)
