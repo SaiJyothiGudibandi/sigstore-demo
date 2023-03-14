@@ -64,7 +64,7 @@ pipeline {
                 dir("mychart/"){
                     sh("helm package .")
                 }
-                def helm_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+//                 def helm_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
 //                 createMetadataFile("Helm-Build", helm_build_metaData)
                 echo("----- COMPLETED Helm Build -----")
             }
@@ -73,7 +73,7 @@ pipeline {
         stage('Helm Publish') {
             steps {
                 echo("----- BEGIN Helm Publish -----")
-                def helm_publish_metaData = ["environment" : "${env.BRANCH_NAME}"]
+//                 def helm_publish_metaData = ["environment" : "${env.BRANCH_NAME}"]
 //                 createMetadataFile("Helm-Build", helm_publish_metaData)
                 echo("----- COMPLETED Helm Publish -----")
             }
