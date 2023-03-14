@@ -10,7 +10,7 @@ pipeline {
                     echo("----- BEGIN Code Build -----")
                     sh 'mvn clean install'
                     def code_build_metaData = ["environment" : "${env.BRANCH_NAME}"
-                    createMetadataFile("Code-Build", code_build_metaData)
+//                     createMetadataFile("Code-Build", code_build_metaData)
                     echo("----- COMPLETED Code Build -----")
                 }
             }
