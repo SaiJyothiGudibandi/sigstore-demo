@@ -92,7 +92,7 @@ pipeline {
 }
 
 
-def createMetadataFile(stageName, metaData) {
+void createMetadataFile(stageName, metaData) {
     sh("ls -al")
     sh("pwd")
     stageName = stageName.replaceAll("[^a-zA-Z0-9-]+", "-").toLowerCase()
@@ -105,7 +105,7 @@ def createMetadataFile(stageName, metaData) {
 // cosign-pub (public key)
 
 
-def cosignSignBlob(metaDataFile){
+void cosignSignBlob(metaDataFile){
     sh("ls -al")
     sh("pwd")
     withCredentials([file(credentialsId: "cosign-key", variable: cosign_pvt)]) {
@@ -113,7 +113,7 @@ def cosignSignBlob(metaDataFile){
     }
 }
 
-def cosignVerifyBlob(metaDataFile){
+void cosignVerifyBlob(metaDataFile){
     sh("ls -al")
     sh("pwd")
     withCredentials([file(credentialsId: "cosign-pub", variable: cosign_pub)]) {
@@ -124,13 +124,13 @@ def cosignVerifyBlob(metaDataFile){
     }
 }
 
-def cosignAttest(metaDataFile, imageName){
+void cosignAttest(metaDataFile, imageName){
     withCredentials([file(credentialsId: "cosign-key", variable: cosign_pvt)]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
 
-def cosignVerifyAttestation(imageName){
+void cosignVerifyAttestation(imageName){
     withCredentials([file(credentialsId: "cosign-pub", variable: cosign_pub)]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
     }
