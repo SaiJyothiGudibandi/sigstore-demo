@@ -1,3 +1,5 @@
+Map metaData = [:]
+
 pipeline {
 //     agent { docker { image 'maven:3.8.7-eclipse-temurin-11' } }
     agent any
@@ -9,8 +11,8 @@ pipeline {
                 dir("src/"){
                     echo("----- BEGIN Code Build -----")
                     sh 'mvn clean install'
-//                     def code_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-//                     createMetadataFile("Code-Build", code_build_metaData)
+                    metaData.code_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("Code-Build", metaData.code_build_metaData)
                     echo("----- COMPLETED Code Build -----")
                 }
             }
