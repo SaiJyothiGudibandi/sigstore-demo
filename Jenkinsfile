@@ -124,7 +124,7 @@ def createMetadataFile(stageName, metaData) {
 def cosignSignBlob(metaDataFile){
     sh("ls -al")
     sh("pwd")
-    withCredentials([file(credentialsId: "cosign-key", variable: cosign_pvt)]) {
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob  --key '${cosign_pvt}' 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --output-signature 'cosign-metadatafiles/${metaDataFile}.sig' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
@@ -132,7 +132,7 @@ def cosignSignBlob(metaDataFile){
 def cosignVerifyBlob(metaDataFile){
     sh("ls -al")
     sh("pwd")
-    withCredentials([file(credentialsId: "cosign-pub", variable: cosign_pub)]) {
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         def sig 
         sig = sh("cat 'cosign-metadatafiles/${metaDataFile}.sig'")
         echo("## At sig: ${sig}")
@@ -141,13 +141,13 @@ def cosignVerifyBlob(metaDataFile){
 }
 
 def cosignAttest(metaDataFile, imageName){
-    withCredentials([file(credentialsId: "cosign-key", variable: cosign_pvt)]) {
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
 
 def cosignVerifyAttestation(imageName){
-    withCredentials([file(credentialsId: "cosign-pub", variable: cosign_pub)]) {
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
