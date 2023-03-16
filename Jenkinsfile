@@ -11,7 +11,7 @@ pipeline {
                 dir("src/"){
                     echo("----- BEGIN Code Build -----")
                     sh 'mvn clean install'
-                    def build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
                     createMetadataFile("Code-Build", build_metaData)
                     echo("----- COMPLETED Code Build -----")
                 }
