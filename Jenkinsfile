@@ -34,11 +34,13 @@ pipeline {
         
         stage('BlackDuck Scan') {
             steps {
-                echo("----- BEGIN BlackDuck Scan-----")
-                echo("BlackDuck Scan is in progress")
-                build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                createMetadataFile("BlackDuck-Scan", build_metaData)
-                echo("----- COMPLETED BlackDuck Scan-----")
+                script {
+                    echo("----- BEGIN BlackDuck Scan-----")
+                    echo("BlackDuck Scan is in progress")
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("BlackDuck-Scan", build_metaData)
+                    echo("----- COMPLETED BlackDuck Scan-----")
+                }
             }
         }
         
