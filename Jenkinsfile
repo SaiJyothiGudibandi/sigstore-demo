@@ -1,5 +1,3 @@
-Map metaData = [:]
-
 pipeline {
 //     agent { docker { image 'maven:3.8.7-eclipse-temurin-11' } }
     agent any
@@ -11,8 +9,8 @@ pipeline {
                 dir("src/"){
                     echo("----- BEGIN Code Build -----")
                     sh 'mvn clean install'
-                    metaData.code_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                    createMetadataFile("Code-Build", metaData.code_build_metaData)
+                    def code_build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("Code-Build", code_build_metaData)
                     echo("----- COMPLETED Code Build -----")
                 }
             }
@@ -94,7 +92,7 @@ pipeline {
 }
 
 
-void createMetadataFile(stageName, metaData) {
+def createMetadataFile(stageName, metaData) {
     sh("ls -al")
     sh("pwd")
     stageName = stageName.replaceAll("[^a-zA-Z0-9-]+", "-").toLowerCase()
@@ -107,7 +105,7 @@ void createMetadataFile(stageName, metaData) {
 // cosign-pub (public key)
 
 
-void cosignSignBlob(metaDataFile){
+def cosignSignBlob(metaDataFile){
     sh("ls -al")
     sh("pwd")
     withCredentials([file(credentialsId: "cosign-key", variable: cosign_pvt)]) {
@@ -115,7 +113,7 @@ void cosignSignBlob(metaDataFile){
     }
 }
 
-void cosignVerifyBlob(metaDataFile){
+def cosignVerifyBlob(metaDataFile){
     sh("ls -al")
     sh("pwd")
     withCredentials([file(credentialsId: "cosign-pub", variable: cosign_pub)]) {
@@ -126,13 +124,13 @@ void cosignVerifyBlob(metaDataFile){
     }
 }
 
-void cosignAttest(metaDataFile, imageName){
+def cosignAttest(metaDataFile, imageName){
     withCredentials([file(credentialsId: "cosign-key", variable: cosign_pvt)]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
 
-void cosignVerifyAttestation(imageName){
+def cosignVerifyAttestation(imageName){
     withCredentials([file(credentialsId: "cosign-pub", variable: cosign_pub)]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
     }
