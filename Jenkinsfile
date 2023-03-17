@@ -54,6 +54,9 @@ pipeline {
         }
         
         stage('Docker Build') {
+            agent {
+                label 'jenkins'
+            }
             steps {
                 script {
                     echo("----- BEGIN Docker Build -----")
