@@ -97,7 +97,7 @@ pipeline {
                     echo("----- BEGIN Docker Publish-----")
                     withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         sh 'ls -al'
-                        sh 'docker login -u $USERNAME -p $PASSWORD kartikjena33'
+                        sh 'docker login -u $USERNAME -p $PASSWORD docker.io/kartikjena33'
                         sh 'docker push kartikjena33/sigstore-demo-image:1.0.0'
                         build_metaData = ["environment" : "${env.BRANCH_NAME}"]
                         createMetadataFile("Docker-Build", docker_publish_metaData)
