@@ -97,7 +97,7 @@ pipeline {
                 script {
                     echo("----- BEGIN Docker Publish-----")
                     sh 'ls -al'
-                    sh 'docker push kartikjena33/sigstore-demo-image:1.0.0 .'
+                    sh 'docker push kartikjena33/sigstore-demo-image:1.0.0'
                     build_metaData = ["environment" : "${env.BRANCH_NAME}"]
                     createMetadataFile("Docker-Build", docker_publish_metaData)
 //                     cosignAttest(metaDataFile, imageName)
