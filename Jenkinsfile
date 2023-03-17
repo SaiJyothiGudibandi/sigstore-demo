@@ -17,7 +17,7 @@ pipeline {
                     sh("mkdir -p cosign-metadatafiles")
                     dir("src/"){
                         echo("----- BEGIN Code Build -----")
-//                         sh 'mvn clean install'
+                        sh 'mvn clean install'
                         build_metaData = ["environment" : "${env.BRANCH_NAME}"]
                         createMetadataFile("Code-Build", build_metaData)
                         echo("----- COMPLETED Code Build -----")
@@ -63,18 +63,29 @@ pipeline {
         }
         
         stage('Docker Build') {
-//             agent {
-//                 label 'master'
-//             }
             steps {
                 script {
                     echo("----- BEGIN Docker Build -----")
                     sh 'ls -al'
                     sh 'docker build -t kartikjena33/sigstore-demo-image:1.0.0 .'
-                    docker.image('kartikjena33/cosign:latest') {
-                        build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                        createMetadataFile("Docker-Build", build_metaData)
-                    }
+                    echo("----- COMPLETED Docker Build -----")
+                }
+            }
+        }
+        
+        stage('Docker Image Attest') {
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    reuseNode true
+                }
+            }
+            steps {
+                script {
+                    echo("----- BEGIN Docker Build -----")
+                    sh 'ls -al'
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}", "imageName" : "kartikjena33/cosign:latest"]
+                    createMetadataFile("Docker-Build", build_metaData)
                     echo("----- COMPLETED Docker Build -----")
                 }
             }
@@ -86,11 +97,9 @@ pipeline {
                     echo("----- BEGIN Docker Publish-----")
                     sh 'ls -al'
                     sh 'docker push kartikjena33/sigstore-demo-image:1.0.0 .'
-                    docker.image('kartikjena33/cosign:latest') {
-                        build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                        createMetadataFile("Docker-Build", docker_publish_metaData)
-                        cosignAttest(metaDataFile, imageName)
-                    }
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("Docker-Build", docker_publish_metaData)
+//                     cosignAttest(metaDataFile, imageName)
                     echo("----- COMPLETED Docker Publish-----")
                 }
             }
