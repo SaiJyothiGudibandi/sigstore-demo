@@ -1,20 +1,20 @@
 def build_metaData
 
 pipeline {
-//     agent { docker { image 'kartikjena33/cosign:latest' } }
-    agent any
+    agent { docker { image 'kartikjena33/cosign:latest' } }
+//     agent any
     stages {
         
         stage('Code Build') {
-            agent {
-                docker {
-                    image 'kartikjena33/cosign:latest'
-                    // Run the container on the node specified at the
-                    // top-level of the Pipeline, in the same workspace,
-                    // rather than on a new node entirely:
-                    reuseNode true
-                }
-            }
+//             agent {
+//                 docker {
+//                     image 'kartikjena33/cosign:latest'
+//                     // Run the container on the node specified at the
+//                     // top-level of the Pipeline, in the same workspace,
+//                     // rather than on a new node entirely:
+//                     reuseNode true
+//                 }
+//             }
             steps {
                  script {
                     sh("mkdir -p cosign-metadatafiles")
