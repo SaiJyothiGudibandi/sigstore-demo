@@ -55,7 +55,7 @@ pipeline {
         
         stage('Docker Build') {
             agent {
-                label 'jenkins'
+                label 'master'
             }
             steps {
                 script {
