@@ -71,8 +71,10 @@ pipeline {
                     echo("----- BEGIN Docker Build -----")
                     sh 'ls -al'
                     sh 'docker build -t kartikjena33/sigstore-demo-image:1.0.0 .'
-                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                    createMetadataFile("Docker-Build", build_metaData)
+                    docker.image('kartikjena33/cosign:latest') {
+                        build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                        createMetadataFile("Docker-Build", build_metaData)
+                    }
                     echo("----- COMPLETED Docker Build -----")
                 }
             }
