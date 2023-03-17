@@ -69,28 +69,30 @@ pipeline {
                     echo("----- BEGIN Docker Build -----")
                     sh 'ls -al'
                     sh 'docker build -t kartikjena33/sigstore-demo-image:1.0.0 .'
-                    echo("----- COMPLETED Docker Build -----")
-                }
-            }
-        }
-        
-        stage('Docker Image Attest') {
-            agent {
-                docker {
-                    image 'kartikjena33/cosign:latest'
-                    reuseNode true
-                }
-            }
-            steps {
-                script {
-                    echo("----- BEGIN Docker Build -----")
-                    sh 'ls -al'
                     build_metaData = ["environment" : "${env.BRANCH_NAME}", "imageName" : "kartikjena33/cosign:latest"]
                     createMetadataFile("Docker-Build", build_metaData)
                     echo("----- COMPLETED Docker Build -----")
                 }
             }
         }
+        
+//         stage('Docker Image Attest') {
+//             agent {
+//                 docker {
+//                     image 'kartikjena33/cosign:latest'
+//                     reuseNode true
+//                 }
+//             }
+//             steps {
+//                 script {
+//                     echo("----- BEGIN Docker Build -----")
+//                     sh 'ls -al'
+//                     build_metaData = ["environment" : "${env.BRANCH_NAME}", "imageName" : "kartikjena33/cosign:latest"]
+//                     createMetadataFile("Docker-Build", build_metaData)
+//                     echo("----- COMPLETED Docker Build -----")
+//                 }
+//             }
+//         }
         
         stage('Docker Publish') {
             steps {
@@ -100,7 +102,7 @@ pipeline {
                     sh 'docker push kartikjena33/sigstore-demo-image:1.0.0'
                     build_metaData = ["environment" : "${env.BRANCH_NAME}"]
                     createMetadataFile("Docker-Build", docker_publish_metaData)
-//                     cosignAttest(metaDataFile, imageName)
+                    cosignAttest(metaDataFile, imageName)
                     echo("----- COMPLETED Docker Publish-----")
                 }
             }
