@@ -98,11 +98,13 @@ pipeline {
             steps {
                 script {
                     echo("----- BEGIN Docker Publish-----")
-                    sh 'ls -al'
-                    sh 'docker push kartikjena33/sigstore-demo-image:1.0.0'
-                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                    createMetadataFile("Docker-Build", docker_publish_metaData)
-                    cosignAttest(metaDataFile, imageName)
+                    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh 'ls -al'
+                        sh 'docker push -u $USERNAME -p $PASSWORD kartikjena33/sigstore-demo-image:1.0.0'
+                        build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                        createMetadataFile("Docker-Build", docker_publish_metaData)
+                        cosignAttest(metaDataFile, imageName)
+                    }
                     echo("----- COMPLETED Docker Publish-----")
                 }
             }
