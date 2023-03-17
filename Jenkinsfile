@@ -15,14 +15,11 @@ pipeline {
                  script {
                     checkout scmGit(branches: [[name: '*/feature-1']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
                     sh("mkdir -p cosign-metadatafiles")
+                    echo("----- BEGIN Code Build -----")
                     sh 'mvn clean install'
-                    dir("src/"){
-                        echo("----- BEGIN Code Build -----")
-//                         sh 'mvn clean install'
-                        build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                        createMetadataFile("Code-Build", build_metaData)
-                        echo("----- COMPLETED Code Build -----")
-                    }
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("Code-Build", build_metaData)
+                    echo("----- COMPLETED Code Build -----")
                  }
             }
         }
