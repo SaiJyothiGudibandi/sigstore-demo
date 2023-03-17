@@ -1,20 +1,17 @@
 def build_metaData
 
 pipeline {
-    agent { docker { image 'kartikjena33/cosign:latest' } }
-//     agent any
+//     agent { docker { image 'kartikjena33/cosign:latest' } }
+    agent any
     stages {
         
         stage('Code Build') {
-//             agent {
-//                 docker {
-//                     image 'kartikjena33/cosign:latest'
-//                     // Run the container on the node specified at the
-//                     // top-level of the Pipeline, in the same workspace,
-//                     // rather than on a new node entirely:
-//                     reuseNode true
-//                 }
-//             }
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    reuseNode true
+                }
+            }
             steps {
                  script {
                     sh("mkdir -p cosign-metadatafiles")
@@ -30,6 +27,12 @@ pipeline {
         }
         
         stage('Sonar Scan') {
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    reuseNode true
+                }
+            }
             steps {
                 script {
                     echo("----- BEGIN Sonar Scan -----")
@@ -42,6 +45,12 @@ pipeline {
         }
         
         stage('BlackDuck Scan') {
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    reuseNode true
+                }
+            }
             steps {
                 script {
                     echo("----- BEGIN BlackDuck Scan-----")
@@ -54,12 +63,13 @@ pipeline {
         }
         
         stage('Docker Build') {
-            agent {
-                label 'master'
-            }
+//             agent {
+//                 label 'master'
+//             }
             steps {
                 script {
                     echo("----- BEGIN Docker Build -----")
+                    sh 'ls -al'
                     sh 'docker build -t kartikjena33/sigstore-demo-image:1.0.0 .'
                     build_metaData = ["environment" : "${env.BRANCH_NAME}"]
                     createMetadataFile("Docker-Build", build_metaData)
@@ -83,6 +93,12 @@ pipeline {
         }
         
         stage('Helm Build') {
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    reuseNode true
+                }
+            }
             steps {
                 script {
                     echo("----- BEGIN Helm Build -----")
@@ -97,6 +113,12 @@ pipeline {
         }
         
         stage('Helm Publish') {
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    reuseNode true
+                }
+            }
             steps {
                 script {
                     echo("----- BEGIN Helm Publish -----")
