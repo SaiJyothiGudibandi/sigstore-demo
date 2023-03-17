@@ -1,7 +1,6 @@
 def build_metaData
 
 pipeline {
-//     agent { docker { image 'maven:3.8.7-eclipse-temurin-11' } }
     agent any
     stages {
         
@@ -13,15 +12,18 @@ pipeline {
                 }
             }
             steps {
-                checkout scmGit(branches: [[name: '*/feature-1']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
-                sh("mkdir -p cosign-metadatafiles")
-                sh 'mvn clean install'
-                dir("src/"){
-                    echo("----- BEGIN Code Build -----")
-                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
-                    createMetadataFile("Code-Build", code_build_metaData)
-                    echo("----- COMPLETED Code Build -----")
-                }
+                 script {
+                    checkout scmGit(branches: [[name: '*/feature-1']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
+                    sh("mkdir -p cosign-metadatafiles")
+                    sh 'mvn clean install'
+                    dir("src/"){
+                        echo("----- BEGIN Code Build -----")
+                        sh 'mvn clean install'
+                        build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                        createMetadataFile("Code-Build", build_metaData)
+                        echo("----- COMPLETED Code Build -----")
+                    }
+                 }
             }
         }
         
@@ -90,6 +92,20 @@ pipeline {
             }
         }
         
+        stage('Docker Publish') {
+            steps {
+                script {
+                    echo("----- BEGIN Docker Publish-----")
+                    sh 'ls -al'
+                    sh 'docker push kartikjena33/sigstore-demo-image:1.0.0 .'
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("Docker-Build", docker_publish_metaData)
+//                     cosignAttest(metaDataFile, imageName)
+                    echo("----- COMPLETED Docker Publish-----")
+                }
+            }
+        }
+        
         stage('Helm Build') {
             agent {
                 docker {
@@ -148,10 +164,15 @@ def createMetadataFile(stageName, metaData) {
     cosignSignBlob(stageName)
 }
 
+// Credential ID:
+// cosign-key (private key)
+// cosign-pub (public key)
+
+
 def cosignSignBlob(metaDataFile){
     sh("ls -al")
     sh("pwd")
-    withCredentials([file(credentialsId: "cosign-key", variable: cosign_pvt)]) {
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob  --key '${cosign_pvt}' 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --output-signature 'cosign-metadatafiles/${metaDataFile}.sig' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
@@ -159,7 +180,7 @@ def cosignSignBlob(metaDataFile){
 def cosignVerifyBlob(metaDataFile){
     sh("ls -al")
     sh("pwd")
-    withCredentials([file(credentialsId: "cosign-pub", variable: cosign_pub)]) {
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         def sig 
         sig = sh("cat 'cosign-metadatafiles/${metaDataFile}.sig'")
         echo("## At sig: ${sig}")
@@ -168,13 +189,13 @@ def cosignVerifyBlob(metaDataFile){
 }
 
 def cosignAttest(metaDataFile, imageName){
-    withCredentials([file(credentialsId: "cosign-key", variable: cosign_pvt)]) {
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
 
 def cosignVerifyAttestation(imageName){
-    withCredentials([file(credentialsId: "cosign-pub", variable: cosign_pub)]) {
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
