@@ -1,2 +1,232 @@
-test
-test
+def build_metaData
+
+pipeline {
+    agent {
+        label "jenkins-slave"
+    }
+    stages {
+        
+        stage('Code Build') {
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    reuseNode true
+                    args '-v /root/.m2:/root/.m2'
+                    
+                }
+            }
+            steps {
+                 script {
+                    checkout scmGit(branches: [[name: '*/feature-1']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
+                    sh("mkdir -p cosign-metadatafiles")
+                    echo("----- BEGIN Code Build -----")
+                    sh 'mvn clean install'
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("Code-Build", build_metaData)
+                    echo("----- COMPLETED Code Build -----")
+                 }
+            }
+        }
+        
+        stage('Sonar Scan') {
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    reuseNode true
+                }
+            }
+            steps {
+                script {
+                    echo("----- BEGIN Sonar Scan -----")
+                    echo("Sonar Scan is in progress")
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("Sonar-Scan", build_metaData)
+                    echo("----- COMPLETED Sonar Scan -----")
+                }
+            }
+        }
+        
+        stage('BlackDuck Scan') {
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    reuseNode true
+                }
+            }
+            steps {
+                script {
+                    echo("----- BEGIN BlackDuck Scan-----")
+                    echo("BlackDuck Scan is in progress")
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("BlackDuck-Scan", build_metaData)
+                    echo("----- COMPLETED BlackDuck Scan-----")
+                }
+            }
+        }
+        
+        stage('Docker Build') {
+		    agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    args '--privileged -u 0:0 -v /var/run/docker.sock:/var/run/docker.sock'
+                    reuseNode true
+                }
+            }
+            steps {
+                script {
+                    echo("----- BEGIN Docker Build -----")
+                    sh 'ls -al'
+                    sh 'docker build -t docker.io/kartikjena33/sigstore-demo-image:1.0.0 .'
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}", "imageName" : "kartikjena33/cosign:latest"]
+                    createMetadataFile("Docker-Build", build_metaData)
+                    echo("----- COMPLETED Docker Build -----")
+                }
+            }
+        }
+        
+//         stage('Docker Image Attest') {
+//             agent {
+//                 docker {
+//                     image 'kartikjena33/cosign:latest'
+//                     reuseNode true
+//                 }
+//             }
+//             steps {
+//                 script {
+//                     echo("----- BEGIN Docker Build -----")
+//                     sh 'ls -al'
+//                     build_metaData = ["environment" : "${env.BRANCH_NAME}", "imageName" : "kartikjena33/cosign:latest"]
+//                     createMetadataFile("Docker-Build", build_metaData)
+//                     echo("----- COMPLETED Docker Build -----")
+//                 }
+//             }
+//         }
+        
+        stage('Docker Publish') {
+		    agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    args '--privileged -u 0:0 -v /var/run/docker.sock:/var/run/docker.sock'
+                    reuseNode true
+                }
+            }
+            steps {
+                script {
+                    echo("----- BEGIN Docker Publish-----")
+                    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        
+                        sh 'docker login -u $USERNAME -p $PASSWORD docker.io/kartikjena33/sigstore-demo-image:1.0.0'
+                        /*
+                        sh 'docker push kartikjena33/sigstore-demo-image:1.0.0'
+                        
+                        build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                        createMetadataFile("Docker-Build", docker_publish_metaData)
+                        cosignAttest(metaDataFile, imageName)
+                        */
+                    }
+                    echo("----- COMPLETED Docker Publish-----")
+                }
+            }
+        }
+        
+        stage('Helm Build') {
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    reuseNode true
+                }
+            }
+            steps {
+                script {
+                    echo("----- BEGIN Helm Build -----")
+                    dir("mychart/"){
+                        sh("helm package --sign --key 'CI-Pipeline' .")
+                        sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
+                    }
+                    //build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    //createMetadataFile("Helm-Build", helm_build_metaData)
+                    echo("----- COMPLETED Helm Build -----")
+                }
+            }
+        }
+        
+        stage('Helm Publish') {
+            /*
+            agent {
+                docker {
+                    image 'kartikjena33/cosign:latest'
+                    args '-v /root:/root'
+                    reuseNode true
+                }
+            }
+            */
+            steps {
+                script {
+                    echo("----- BEGIN Helm Publish -----")
+                    dir("mychart/"){
+                        sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
+                        sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
+                    }
+                    //build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    //createMetadataFile("Helm-Build", helm_publish_metaData)
+                    echo("----- COMPLETED Helm Publish -----")
+                }
+            }
+        }
+        
+//         stage('Deploy') {
+//             steps {
+//                 echo("----- BEGIN Deploy -----")
+//                 cosignVerifyBlob(metaDataFile, )
+//                 sh 'docker publish -t kartikjena33/sigstore-demo-image:1.0.0 .'
+//                 echo("----- COMPLETED Deploy -----")
+//             }
+//         }
+        
+    }
+}
+
+
+def createMetadataFile(stageName, metaData) {
+    sh("ls -al")
+    sh("pwd")
+    stageName = stageName.replaceAll("[^a-zA-Z0-9-]+", "-").toLowerCase()
+    writeJSON(file: "cosign-metadatafiles/${stageName}-MetaData.json", json: metaData, pretty: 4)
+    cosignSignBlob(stageName)
+}
+
+// Credential ID:
+// cosign-key (private key)
+// cosign-pub (public key)
+
+
+def cosignSignBlob(metaDataFile){
+    sh("ls -al")
+    sh("pwd")
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob -y --key '${cosign_pvt}' 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --output-signature 'cosign-metadatafiles/${metaDataFile}.sig' --rekor-url 'https://rekor.sigstore.dev'")
+    }
+}
+
+def cosignVerifyBlob(metaDataFile){
+    sh("ls -al")
+    sh("pwd")
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+        def sig 
+        sig = sh("cat 'cosign-metadatafiles/${metaDataFile}.sig'")
+        echo("## At sig: ${sig}")
+        sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub}' --signature '${sig}' 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --rekor-url 'https://rekor.sigstore.dev'")
+    }
+}
+
+def cosignAttest(metaDataFile, imageName){
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
+    }
+}
+
+def cosignVerifyAttestation(imageName){
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
+    }
+}
