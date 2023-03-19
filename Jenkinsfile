@@ -15,7 +15,7 @@ node("jenkins-slave"){
 	 }
 	}
 	stage('Sonar Scan') {
-		docker.image('kartikjena33/cosign:latest').inside('-u 0:0'){
+		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 -v /root/.m2:/root/.m2'){
                     echo("----- BEGIN Sonar Scan -----")
                     echo("Sonar Scan is in progress")
                     build_metaData = ["environment" : "${env.BRANCH_NAME}"]
