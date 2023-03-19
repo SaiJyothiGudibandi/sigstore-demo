@@ -56,6 +56,7 @@ node("jenkins-slave"){
         }
         
         stage('Helm Build') {
+		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
                     echo("----- BEGIN Helm Build -----")
                     dir("mychart/"){
                         sh("helm package --sign --key 'CI-Pipeline' .")
@@ -64,11 +65,14 @@ node("jenkins-slave"){
                     //build_metaData = ["environment" : "${env.BRANCH_NAME}"]
                     //createMetadataFile("Helm-Build", helm_build_metaData)
                     echo("----- COMPLETED Helm Build -----")
-        }
+         }
+	}
         
         stage('Helm Publish') {
+		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
                     echo("----- BEGIN Helm Publish -----")
                     dir("mychart/"){
+                        sh("export PATH=$PATH:google-cloud-sdk/bin && gcloud artifacts repositories list && gcloud auth configure-docker us-central1-docker.pkg.dev --quiet")
                         sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
                         sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
                     }
@@ -76,6 +80,7 @@ node("jenkins-slave"){
                     //createMetadataFile("Helm-Build", helm_publish_metaData)
                     echo("----- COMPLETED Helm Publish -----")
         }
+	}
         
 }
 
