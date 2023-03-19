@@ -3,8 +3,9 @@ def build_metaData
 
 node("jenkins-slave"){
 	stage("Checkout"){
-		checkout scmGit(branches: [[name: '*/feature-1']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
-	         sh("mkdir -p cosign-metadatafiles")
+		//checkout scmGit(branches: [[name: '*/feature-1']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
+	        checkout scm 
+		sh("mkdir -p cosign-metadatafiles")
                   echo("----- BEGIN Code Build -----")
                   sh 'mvn clean install'
                   build_metaData = ["environment" : "${env.BRANCH_NAME}"]
