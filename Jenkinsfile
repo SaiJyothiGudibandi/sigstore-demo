@@ -1,5 +1,82 @@
 def build_metaData
 
+
+node("jenkins-slave"){
+	stage("Checkout"){
+		checkout scmGit(branches: [[name: '*/feature-1']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
+	         sh("mkdir -p cosign-metadatafiles")
+                  echo("----- BEGIN Code Build -----")
+                  sh 'mvn clean install'
+                  build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                  createMetadataFile("Code-Build", build_metaData)
+                  echo("----- COMPLETED Code Build -----")
+	}
+	stage('Sonar Scan') {
+		docker.image('kartikjena33/cosign:latest').inside('-u 0:0'){
+                    echo("----- BEGIN Sonar Scan -----")
+                    echo("Sonar Scan is in progress")
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("Sonar-Scan", build_metaData)
+                    echo("----- COMPLETED Sonar Scan -----")
+		}
+        }
+        
+        stage('BlackDuck Scan') {
+                    echo("----- BEGIN BlackDuck Scan-----")
+                    echo("BlackDuck Scan is in progress")
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    createMetadataFile("BlackDuck-Scan", build_metaData)
+                    echo("----- COMPLETED BlackDuck Scan-----")
+        }
+	  stage('Docker Build') {
+                    echo("----- BEGIN Docker Build -----")
+                    sh 'ls -al'
+                    sh 'docker build -t docker.io/kartikjena33/sigstore-demo-image:1.0.0 .'
+                    build_metaData = ["environment" : "${env.BRANCH_NAME}", "imageName" : "kartikjena33/cosign:latest"]
+                    createMetadataFile("Docker-Build", build_metaData)
+                    echo("----- COMPLETED Docker Build -----")
+        }
+	 stage('Docker Publish') {
+                    echo("----- BEGIN Docker Publish-----")
+                    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        
+                        sh 'docker login -u $USERNAME -p $PASSWORD docker.io/kartikjena33/sigstore-demo-image:1.0.0'
+                        /*
+                        sh 'docker push kartikjena33/sigstore-demo-image:1.0.0'
+                        
+                        build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                        createMetadataFile("Docker-Build", docker_publish_metaData)
+                        cosignAttest(metaDataFile, imageName)
+                        */
+                    }
+                    echo("----- COMPLETED Docker Publish-----")
+        }
+        
+        stage('Helm Build') {
+                    echo("----- BEGIN Helm Build -----")
+                    dir("mychart/"){
+                        sh("helm package --sign --key 'CI-Pipeline' .")
+                        sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
+                    }
+                    //build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    //createMetadataFile("Helm-Build", helm_build_metaData)
+                    echo("----- COMPLETED Helm Build -----")
+        }
+        
+        stage('Helm Publish') {
+                    echo("----- BEGIN Helm Publish -----")
+                    dir("mychart/"){
+                        sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
+                        sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
+                    }
+                    //build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+                    //createMetadataFile("Helm-Build", helm_publish_metaData)
+                    echo("----- COMPLETED Helm Publish -----")
+        }
+        
+}
+
+/*
 pipeline {
     agent {
         label "jenkins-slave"
@@ -185,7 +262,7 @@ pipeline {
         
     }
 }
-
+*/
 
 def createMetadataFile(stageName, metaData) {
     sh("ls -al")
