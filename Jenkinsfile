@@ -70,7 +70,7 @@ node("jenkins-slave"){
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
                     echo("----- BEGIN Helm Publish -----")
                     dir("mychart/"){
-                        sh("export PATH=$PATH:google-cloud-sdk/bin && gcloud auth configure-docker us-central1-docker.pkg.dev --quiet")
+                        sh("gcloud auth configure-docker us-central1-docker.pkg.dev --quiet")
                         sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
                         sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
                     }
