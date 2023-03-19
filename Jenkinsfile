@@ -34,7 +34,7 @@ node("jenkins-slave"){
 	  stage('Docker Build') {
                     echo("----- BEGIN Docker Build -----")
                     sh 'ls -al'
-                    sh 'docker build -t docker.io/kartikjena33/sigstore-demo-image:1.0.0 .'
+                    sh 'docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 .'
                     build_metaData = ["environment" : "${env.BRANCH_NAME}", "imageName" : "kartikjena33/cosign:latest"]
                     createMetadataFile("Docker-Build", build_metaData)
                     echo("----- COMPLETED Docker Build -----")
@@ -42,11 +42,11 @@ node("jenkins-slave"){
 	 stage('Docker Publish') {
                     echo("----- BEGIN Docker Publish-----")
                     withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh 'gcloud auth configure-docker us-central1-docker.pkg.dev"
+                        //sh 'docker login -u $USERNAME -p $PASSWORD docker.io/kartikjena33/sigstore-demo-image:1.0.0'
                         
-                        sh 'docker login -u $USERNAME -p $PASSWORD docker.io/kartikjena33/sigstore-demo-image:1.0.0'
+                        sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
                         /*
-                        sh 'docker push kartikjena33/sigstore-demo-image:1.0.0'
-                        
                         build_metaData = ["environment" : "${env.BRANCH_NAME}"]
                         createMetadataFile("Docker-Build", docker_publish_metaData)
                         cosignAttest(metaDataFile, imageName)
