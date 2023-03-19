@@ -42,9 +42,7 @@ node("jenkins-slave"){
 	 stage('Docker Publish') {
                     echo("----- BEGIN Docker Publish-----")
                     withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh 'gcloud auth configure-docker us-central1-docker.pkg.dev'
-                        //sh 'docker login -u $USERNAME -p $PASSWORD docker.io/kartikjena33/sigstore-demo-image:1.0.0'
-                        
+                        sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
                         sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
                         /*
                         build_metaData = ["environment" : "${env.BRANCH_NAME}"]
@@ -72,7 +70,7 @@ node("jenkins-slave"){
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
                     echo("----- BEGIN Helm Publish -----")
                     dir("mychart/"){
-                        sh("export PATH=$PATH:google-cloud-sdk/bin && gcloud artifacts repositories list && gcloud auth configure-docker us-central1-docker.pkg.dev --quiet")
+                        sh("export PATH=$PATH:google-cloud-sdk/bin && gcloud auth configure-docker us-central1-docker.pkg.dev --quiet")
                         sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
                         sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
                     }
