@@ -42,7 +42,7 @@ node("jenkins-slave"){
 	 stage('Docker Publish') {
                     echo("----- BEGIN Docker Publish-----")
                     withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh 'gcloud auth configure-docker us-central1-docker.pkg.dev"
+                        sh 'gcloud auth configure-docker us-central1-docker.pkg.dev'
                         //sh 'docker login -u $USERNAME -p $PASSWORD docker.io/kartikjena33/sigstore-demo-image:1.0.0'
                         
                         sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
