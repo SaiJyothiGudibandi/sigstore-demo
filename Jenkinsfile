@@ -5,7 +5,7 @@ node("jenkins-slave"){
 	stage("Checkout"){
 		checkout scmGit(branches: [[name: '*/feature-1']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
 	        //checkout scm 
-		docker.image('kartikjena33/cosign:latest').inside('-u 0:0'){
+		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 -v /root/.m2:/root/.m2'){
 		sh("mkdir -p cosign-metadatafiles")
                   echo("----- BEGIN Code Build -----")
                   sh 'mvn clean install'
@@ -15,7 +15,7 @@ node("jenkins-slave"){
 	 }
 	}
 	stage('Sonar Scan') {
-		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 -v /root/.m2:/root/.m2'){
+		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
                     echo("----- BEGIN Sonar Scan -----")
                     echo("Sonar Scan is in progress")
                     build_metaData = ["environment" : "${env.BRANCH_NAME}"]
