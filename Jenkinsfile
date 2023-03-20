@@ -180,8 +180,9 @@ def cosignAttestFile(imageName, metaDataFileName){
 }
 
 def cosignVerifyAttestation(imageName){
-    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign-key}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
+    withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
+        sh("ls -al")
+        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
 
