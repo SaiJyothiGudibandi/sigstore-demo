@@ -62,7 +62,7 @@ node("jenkins-slave"){
             sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
             build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":["credentials": "docker-login", "url": "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0", "checksum": "f5f92ef4e533ecffa18d058bee91cd818de3ba8145bfa63e19c0a7da31bca5df"]]
             createMetadataFile("Docker-Build", build_metaData)
-            // cosignAttest(imageName)
+            cosignAttest(imageName)
 	    }
 	    echo("----- COMPLETED Docker Publish-----")
     }
@@ -156,7 +156,7 @@ def cosignAttest(imageName){
 
 def cosignAttestFile(imageName, metaDatafile){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-	    dir(cosign-metadatafiles){
+	    dir("cosign-metadatafiles"){
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
         }
     }
