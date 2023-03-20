@@ -11,7 +11,7 @@ node("jenkins-slave"){
     def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
 
 	stage("Checkout"){
-		def scmVars = checkout scmGit(branches: [[name: '*/feature-demo-3']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
+		def scmVars = checkout scmGit(branches: [[name: '*/${env.BRANCH_NAME}']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
         echo "## At scmVars : ${scmVars}"
         def committed_by = getAuthorEmailForCommit("${scmVars.GIT_COMMIT}")
         echo "## At committed_by : ${committed_by}"
