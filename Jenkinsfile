@@ -181,6 +181,7 @@ def cosignVerifyAttestation(imageName){
         sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
         withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
             sh("ls -al")
+	    sh("cat rekor-policy.rego")
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
         }
     }
