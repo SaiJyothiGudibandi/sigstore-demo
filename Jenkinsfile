@@ -144,7 +144,7 @@ def cosignVerifyBlob(metaDataFile){
         def sig 
         sig = sh("cat 'cosign-metadatafiles/${metaDataFile}.sig'")
         echo("## At sig: ${sig}")
-        sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub}' --signature '${sig}' 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --rekor-url 'https://rekor.sigstore.dev'")
+        sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub}' --signature '${sig}' '${metaDataFile}-MetaData.json' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
 
@@ -166,7 +166,7 @@ def cosignAttest(imageName){
                     sh("cat ${file}")
                     def fileName = "${file}".split("-")
                     echo "## At 5 fileName: ${fileName}"
-                    cosignVerifyBlob("${fileName}")
+                    cosignVerifyBlob("${fileName[0]}-${fileName[1]}")
                     sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest -y --key '${cosign_pvt}' --predicate '${file}' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
                 }
 		    }
