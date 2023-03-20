@@ -138,7 +138,6 @@ def cosignVerifyBlob(metaDataFile){
     withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
         def sig 
         sig = sh(script: "cat '${metaDataFile}.sig'", returnStdout: true).trim()
-        echo("## At sig: ${sig}")
         sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub_key}' --signature '${sig}' '${metaDataFile}-MetaData.json' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
@@ -149,7 +148,6 @@ def cosignClean(imageName){
 
 def cosignAttest(imageName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-        echo "## At 1"
 	dir("cosign-metadatafiles"){
 	    def files = findFiles(glob: '*.json')
 	    if ("${files.length}" >= 1) {
