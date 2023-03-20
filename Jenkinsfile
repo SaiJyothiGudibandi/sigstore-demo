@@ -11,8 +11,11 @@ node("jenkins-slave"){
     def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
 
 	stage("Checkout"){
-		def scmVars = checkout scmGit(branches: [[name: '*/${env.BRANCH_NAME}']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
+		def scmVars = checkout scmGit(branches: [[name: '*/feature-demo-3']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
         echo "## At scmVars : ${scmVars}"
+        echo "## At scmVars.GIT_COMMIT : ${scmVars.GIT_COMMIT}"
+        def git_commit = getAuthorEmailForCommit() 
+        echo "## At git_commit : ${git_commit}"
         def committed_by = getAuthorEmailForCommit("${scmVars.GIT_COMMIT}")
         echo "## At committed_by : ${committed_by}"
 		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["git_url": "${scmVars.GIT_URL}", "branch_name": "${env.BRANCH_NAME}", "committed_by": "${committed_by}"]]]
@@ -192,4 +195,8 @@ String getEnvtype(branch) {
 String getAuthorEmailForCommit(String commitId) {
     def gitCommitID = commitId.split("#")[0]
     sh(script: "git log -1 --format='%ae' ${gitCommitID} | head -1", returnStdout: true).trim()
+}
+
+String getAuthorEmailForCommit() {
+    sh "(git log -n 1 --pretty=format:'%H')".trim()
 }
