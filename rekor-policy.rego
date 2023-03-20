@@ -27,12 +27,12 @@ allow = false {
 
 allow = false {
   input.predicate.type == "sonarquality"
-  input.predicate.stage_properties.enabled != true
+  input.predicate.stage_properties.enabled != "true"
 }
 
 allow = false {
   input.predicate.type == "blackduckquality"
-  input.predicate.stage_properties.enabled != true
+  input.predicate.stage_properties.enabled != "true"
 }
 
 allow = false {
