@@ -99,8 +99,8 @@ node("jenkins-slave"){
 	stage('Verfication') {
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
             echo("----- BEGIN Verfication -----")
-            script.dir(cosign-metadatafiles){
-		        def files = script.findFiles(glob: '*.json')
+            dir(cosign-metadatafiles){
+		        def files = findFiles(glob: '*.json')
 		        if ("${files.length}" >= 1) {
 			        files.each { metaDatafile ->
 			        cosignVerifyAttestation(imageName)
@@ -143,8 +143,8 @@ def cosignVerifyBlob(metaDataFile){
 
 def cosignAttest(imageName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-	    script.dir(cosign-metadatafiles){
-		    def files = script.findFiles(glob: '*.json')
+	    dir(cosign-metadatafiles){
+		    def files = findFiles(glob: '*.json')
 		    if ("${files.length}" >= 1) {
                 files.each { metaDatafile ->
                     sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
@@ -156,7 +156,7 @@ def cosignAttest(imageName){
 
 def cosignAttestFile(imageName, metaDatafile){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-	    script.dir(cosign-metadatafiles){
+	    dir(cosign-metadatafiles){
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
         }
     }
