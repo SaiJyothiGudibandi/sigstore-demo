@@ -12,7 +12,7 @@ node("jenkins-slave"){
 
     // Chekout
 	stage("Checkout"){
-		def scmVars = checkout scmGit(branches: [[name: '*/feature-demo-3']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
+		def scmVars = checkout scmGit(branches: [[name: '*/feature-demo-4']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
         echo "## At scmVars : ${scmVars}"
         echo "## At scmVars.GIT_COMMIT : ${scmVars.GIT_COMMIT}"
         def git_commit = getAuthorEmailForCommit() 
