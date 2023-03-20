@@ -51,9 +51,37 @@ node("jenkins-slave"){
         echo("----- COMPLETED BlackDuck Scan-----")
     }
 
+    stage('Helm Build') {
+        docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
+            echo("----- BEGIN Helm Build -----")
+            dir("mychart/"){
+                sh("helm package --sign --key 'CI-Pipeline' .")
+                sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
+            }
+            build_metaData = ["environment" : "${envType}", "type": "helmbuild", "stage_properties":[ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["helm package --sign --key 'CI-Pipeline' .", "helm sigstore upload sigstore-demo-1.0.5.tgz"]]]
+            createMetadataFile("Helm-Build", build_metaData)
+            cosignAttest(imageName)
+            echo("----- COMPLETED Helm Build -----")
+        }
+	}
+        
+    stage('Helm Publish') {
+        docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
+            echo("----- BEGIN Helm Publish -----")
+            dir("mychart/"){
+                sh("gcloud auth configure-docker us-central1-docker.pkg.dev --quiet")
+                sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
+                sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
+            }
+            build_metaData = ["environment" : "${envType}", "type": "helmpublish", "stage_properties":[ "credentials": "jfrog-artifact", "url": "oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local/sigstore-demo-1.0.5.tgz", "checksum": "b3414aa09d1157af794ef65d699bf3b8d2a8bc784aaceb2ceb152d9918de5380"]]
+            createMetadataFile("Helm-Publish", build_metaData)
+            cosignAttest(imageName)
+            echo("----- COMPLETED Helm Publish -----")
+        }
+	}
+
 	stage('Docker Build') {
         echo("----- BEGIN Docker Build -----")
-        sh 'ls -al'
         sh 'docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 .'
         build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":[ "running_on": "jenkins_slave_2", "application_image": "APPROVED", "command_executed": "docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 ."]]
         createMetadataFile("Docker-Build", build_metaData)
@@ -72,35 +100,6 @@ node("jenkins-slave"){
 	    }
 	    echo("----- COMPLETED Docker Publish-----")
     }
-        
-    stage('Helm Build') {
-        docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
-            echo("----- BEGIN Helm Build -----")
-            dir("mychart/"){
-                sh("helm package --sign --key 'CI-Pipeline' .")
-                sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
-            }
-            build_metaData = ["environment" : "${envType}", "type": "helmbuild", "stage_properties":[ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["helm package --sign --key 'CI-Pipeline' .", "helm sigstore upload sigstore-demo-1.0.5.tgz"]]]
-            createMetadataFile("Helm-Build", build_metaData)
-            cosignAttestFile(imageName, "helm-build")
-            echo("----- COMPLETED Helm Build -----")
-        }
-	}
-        
-    stage('Helm Publish') {
-        docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
-            echo("----- BEGIN Helm Publish -----")
-            dir("mychart/"){
-                sh("gcloud auth configure-docker us-central1-docker.pkg.dev --quiet")
-                sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
-                sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
-            }
-            build_metaData = ["environment" : "${envType}", "type": "helmpublish", "stage_properties":[ "credentials": "jfrog-artifact", "url": "oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local/sigstore-demo-1.0.5.tgz", "checksum": "b3414aa09d1157af794ef65d699bf3b8d2a8bc784aaceb2ceb152d9918de5380"]]
-            createMetadataFile("Helm-Publish", build_metaData)
-            cosignAttestFile(imageName, "helm-publish")
-            echo("----- COMPLETED Helm Publish -----")
-        }
-	}
 	
 	stage('Verfication') {
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
@@ -115,12 +114,10 @@ node("jenkins-slave"){
                     echo("----- COMPLETED Helm Publish -----")
         	}
         }
-	}   
+	}
 }
 
 def createMetadataFile(stageName, metaData) {
-    sh("ls -al")
-    sh("pwd")
     stageName = stageName.replaceAll("[^a-zA-Z0-9-]+", "-").toLowerCase()
     writeJSON(file: "cosign-metadatafiles/${stageName}-MetaData.json", json: metaData, pretty: 4)
     cosignSignBlob(stageName)
@@ -129,16 +126,12 @@ def createMetadataFile(stageName, metaData) {
 }
 
 def cosignSignBlob(metaDataFile){
-    sh("ls -al")
-    sh("pwd")
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob -y --key '${cosign_pvt}' 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --output-signature 'cosign-metadatafiles/${metaDataFile}.sig' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
 
 def cosignVerifyBlob(metaDataFile){
-    sh("ls -al")
-    sh("pwd")
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         def sig 
         sig = sh("cat 'cosign-metadatafiles/${metaDataFile}.sig'")
@@ -154,7 +147,6 @@ def cosignAttest(imageName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         echo "## At 1"
 	    dir("cosign-metadatafiles"){
-            sh("cosign attest -h")
             echo "## At 2"
 		    def files = findFiles(glob: '*.json')
             echo "## At 3 files: ${files}"
@@ -162,6 +154,7 @@ def cosignAttest(imageName){
                 echo "## At 4"
                 files.each { file ->
                     echo "## At 5 metaDatafile: ${file}"
+                    sh("cat ${file}")
                     sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest -y --key '${cosign_pvt}' --predicate '${file}' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
                 }
 		    }
@@ -169,13 +162,13 @@ def cosignAttest(imageName){
     }
 }
 
-def cosignAttestFile(imageName, metaDataFileName){
-    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-	    dir("cosign-metadatafiles"){
-            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest -y --key '${cosign_pvt}' --force --predicate '${metaDataFileName}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
-        }
-    }
-}
+// def cosignAttestFile(imageName, metaDataFileName){
+//     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+// 	    dir("cosign-metadatafiles"){
+//             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest -y --key '${cosign_pvt}' --force --predicate '${metaDataFileName}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
+//         }
+//     }
+// }
 
 def cosignVerifyAttestation(imageName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
