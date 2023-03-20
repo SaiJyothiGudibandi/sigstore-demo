@@ -10,7 +10,7 @@ node("jenkins-slave"){
 
 	stage("Checkout"){
 		checkout scmGit(branches: [[name: '*/feature-demo-3']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
-		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["branch_name": "${env.BRANCH_NAME}", "committed_by": "NGA"]]]
+		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["branch_name": "${env.BRANCH_NAME}"]]]
 		createMetadataFile("Checkout", build_metaData)
 	}
 
@@ -85,7 +85,7 @@ node("jenkins-slave"){
                 sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
                 sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
             }
-            build_metaData = ["environment" : "${envType}", "type": "helmpublish", "stage_properties":[ "credentials": "jfrog-artifact", "url": "oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local/sigstore-demo-1.0.5.tgz", "checksum": "b3414aa09d1157af794ef65d699bf3b8d2a8bc784aaceb2ceb152d9918de5380"]]]
+            build_metaData = ["environment" : "${envType}", "type": "helmpublish", "stage_properties":[ "credentials": "jfrog-artifact", "url": "oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local/sigstore-demo-1.0.5.tgz", "checksum": "b3414aa09d1157af794ef65d699bf3b8d2a8bc784aaceb2ceb152d9918de5380"]]
             createMetadataFile("Helm-Build", build_metaData)
             echo("----- COMPLETED Helm Publish -----")
         }
