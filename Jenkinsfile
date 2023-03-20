@@ -155,9 +155,9 @@ def cosignAttest(imageName){
             echo "## At 3 files: ${files}"
 		    if ("${files.length}" >= 1) {
                 echo "## At 4"
-                files.each { metaDatafile ->
-                echo "## At 5 metaDatafile: ${metaDatafile}"
-                    sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate '${metaDataFile}' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
+                files.each { file ->
+                    echo "## At 5 metaDatafile: ${file}"
+                    sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate '${file}' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
                 }
 		    }
 	    }
