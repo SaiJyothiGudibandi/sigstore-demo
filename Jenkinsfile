@@ -6,33 +6,28 @@ def build_metaData
 
 node("jenkins-slave"){
     def envType = getEnvtype("${env.BRANCH_NAME}")
-    echo("## At envType: ${envType}")
-
     def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
 
     // Chekout
 	stage("Checkout"){
 		def scmVars = checkout scmGit(branches: [[name: '*/feature-demo-4']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
-        echo "## At scmVars : ${scmVars}"
-        echo "## At scmVars.GIT_COMMIT : ${scmVars.GIT_COMMIT}"
-        def git_commit = getAuthorEmailForCommit() 
-        echo "## At git_commit : ${git_commit}"
-        def committed_by = getAuthorEmailForCommit("${scmVars.GIT_COMMIT}")
-        echo "## At committed_by : ${committed_by}"
+		def git_commit = getAuthorEmailForCommit()
+		def committed_by = getAuthorEmailForCommit("${scmVars.GIT_COMMIT}")
+		echo "## At committed_by : ${committed_by}"
 		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["git_url": "${scmVars.GIT_URL}", "branch_name": "${env.BRANCH_NAME}", "committed_by": "${committed_by}"]]]
 		createMetadataFile("Checkout", build_metaData)
 	}
 
     // Code Build
 	stage("Code Build"){
-		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 -v /root/.m2:/root/.m2'){
+	    docker.image('kartikjena33/cosign:latest').inside('-u 0:0 -v /root/.m2:/root/.m2'){
 		    sh("mkdir -p cosign-metadatafiles")
-            echo("----- BEGIN Code Build -----")
-            sh 'mvn clean install'
-            build_metaData = ["environment" : "${envType}", "type": "codebuild", "stage_properties": [ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["mvn clean install"]]]
-            createMetadataFile("Code-Build", build_metaData)
-            echo("----- COMPLETED Code Build -----")
-        }
+		    echo("----- BEGIN Code Build -----")
+		    sh 'mvn clean install'
+		    build_metaData = ["environment" : "${envType}", "type": "codebuild", "stage_properties": [ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["mvn clean install"]]]
+		    createMetadataFile("Code-Build", build_metaData)
+		    echo("----- COMPLETED Code Build -----")
+	    }
 	}
 
     // Sonar Scan
