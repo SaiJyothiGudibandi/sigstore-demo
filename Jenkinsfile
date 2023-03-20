@@ -11,7 +11,8 @@ node("jenkins-slave"){
     def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
 
 	stage("Checkout"){
-		checkout scmGit(branches: [[name: '*/feature-demo-3']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
+		def scmVars = checkout scmGit(branches: [[name: '*/feature-demo-3']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
+        echo "## At scmVars : ${scmVars}"
 		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["branch_name": "${env.BRANCH_NAME}"]]]
 		createMetadataFile("Checkout", build_metaData)
 	}
@@ -48,7 +49,7 @@ node("jenkins-slave"){
 	stage('Docker Build') {
         echo("----- BEGIN Docker Build -----")
         sh 'ls -al'
-        sh 'docker build -t ${imageName} .'
+        sh 'docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 .'
         build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":[ "running_on": "jenkins_slave_2", "application_image": "APPROVED", "command_executed": "docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 ."]]
         createMetadataFile("Docker-Build", build_metaData)
         echo("----- COMPLETED Docker Build -----")
@@ -58,7 +59,7 @@ node("jenkins-slave"){
 	    echo("----- BEGIN Docker Publish-----")
 	    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
             sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
-            sh 'docker push ${imageName}'
+            sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
             build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":["credentials": "docker-login", "url": "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0", "checksum": "f5f92ef4e533ecffa18d058bee91cd818de3ba8145bfa63e19c0a7da31bca5df"]]
             createMetadataFile("Docker-Build", build_metaData)
             cosignAttest(imageName, metaDataFile)
