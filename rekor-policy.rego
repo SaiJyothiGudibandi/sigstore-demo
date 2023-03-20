@@ -4,7 +4,7 @@ default allow = true
 
 allow = false {
   input.predicate.type == "checkout"
-  result := contains(input.predicate.stage_properties.scm.application_ci.committed_by, ".@gmail.com")
+  result := contains(input.predicate.stage_properties.scm.application_ci.committed_by, "@gmail.com")
   result != true
 }
 
