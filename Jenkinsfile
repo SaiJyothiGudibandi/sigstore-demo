@@ -10,7 +10,7 @@ node("jenkins-slave"){
 
 	stage("Checkout"){
 		checkout scmGit(branches: [[name: '*/feature-demo-3']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
-		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["branch_name": "${env.BRANCH_NAME}"]]]
+		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["branch_name": "${env.BRANCH_NAME}", "committed_by": "NGA"]]]
 		createMetadataFile("Checkout", build_metaData)
 	}
 
