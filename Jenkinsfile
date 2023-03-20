@@ -5,10 +5,12 @@
 def build_metaData
 
 node("jenkins-slave"){
+    def envType = getEnvtype("${env.BRANCH_NAME}")
+    echo("## At envType: ${envType}")
 
 	stage("Checkout"){
 		checkout scmGit(branches: [[name: '*/feature-demo-3']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
-		build_metaData = ["environment" : "${env.BRANCH_NAME}", "type": "Checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["repo_url": "${env.GIT_URL}", "branch_name": "${env.BRANCH_NAME}", "commit_id": "${env.GIT_COMMIT}"]]]
+		build_metaData = ["environment" : "${envType}", "type": "Checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["repo_url": "${env.GIT_URL}", "branch_name": "${env.BRANCH_NAME}", "commit_id": "${env.GIT_COMMIT}"]]]
 		createMetadataFile("Checkout", build_metaData)
 	}
 
@@ -17,7 +19,7 @@ node("jenkins-slave"){
 		    sh("mkdir -p cosign-metadatafiles")
             echo("----- BEGIN Code Build -----")
             sh 'mvn clean install'
-            build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+            build_metaData = ["environment" : "${envType}"]
             createMetadataFile("Code-Build", build_metaData)
             echo("----- COMPLETED Code Build -----")
         }
@@ -27,7 +29,7 @@ node("jenkins-slave"){
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
             echo("----- BEGIN Sonar Scan -----")
             echo("Sonar Scan is in progress")
-            build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+            build_metaData = ["environment" : "${envType}"]
             createMetadataFile("Sonar-Scan", build_metaData)
             echo("----- COMPLETED Sonar Scan -----")
 		}
@@ -36,7 +38,7 @@ node("jenkins-slave"){
     stage('BlackDuck Scan') {
         echo("----- BEGIN BlackDuck Scan-----")
         echo("BlackDuck Scan is in progress")
-        build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+        build_metaData = ["environment" : "${envType}"]
         createMetadataFile("BlackDuck-Scan", build_metaData)
         echo("----- COMPLETED BlackDuck Scan-----")
     }
@@ -45,7 +47,7 @@ node("jenkins-slave"){
         echo("----- BEGIN Docker Build -----")
         sh 'ls -al'
         sh 'docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 .'
-        build_metaData = ["environment" : "${env.BRANCH_NAME}", "imageName" : "kartikjena33/cosign:latest"]
+        build_metaData = ["environment" : "${envType}", "imageName" : "kartikjena33/cosign:latest"]
         createMetadataFile("Docker-Build", build_metaData)
         echo("----- COMPLETED Docker Build -----")
     }
@@ -55,7 +57,7 @@ node("jenkins-slave"){
 	    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
             sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
             sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
-            build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+            build_metaData = ["environment" : "${envType}"]
             createMetadataFile("Docker-Build", docker_publish_metaData)
             cosignAttest(imageName, metaDataFile)
 	    }
@@ -69,7 +71,7 @@ node("jenkins-slave"){
                 sh("helm package --sign --key 'CI-Pipeline' .")
                 sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
             }
-            build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+            build_metaData = ["environment" : "${envType}"]
             createMetadataFile("Helm-Build", helm_build_metaData)
             echo("----- COMPLETED Helm Build -----")
         }
@@ -83,7 +85,7 @@ node("jenkins-slave"){
                 sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
                 sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
             }
-            build_metaData = ["environment" : "${env.BRANCH_NAME}"]
+            build_metaData = ["environment" : "${envType}"]
             createMetadataFile("Helm-Build", helm_publish_metaData)
             echo("----- COMPLETED Helm Publish -----")
         }
@@ -153,4 +155,18 @@ def cosignVerifyAttestation(imageName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
     }
+}
+
+String getEnvtype(branch) {
+    String envtype
+    if (branch.startsWith("dev")) {
+        envtype = "INTEGRATION"
+    } else if (branch.startsWith("verify")) {
+        envtype = "VERIFY"
+    } else if (branch.startsWith("master")) {
+        envtype = "PROD"
+    } else{
+        envtype = "SNAPSHOT"
+    }
+    return envtype
 }
