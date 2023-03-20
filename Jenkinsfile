@@ -67,6 +67,7 @@ node("jenkins-slave"){
             sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
             build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":["credentials": "docker-login", "url": "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0", "checksum": "f5f92ef4e533ecffa18d058bee91cd818de3ba8145bfa63e19c0a7da31bca5df"]]
             createMetadataFile("Docker-Build", build_metaData)
+            cosignClean(imageName)
             cosignAttest(imageName)
 	    }
 	    echo("----- COMPLETED Docker Publish-----")
@@ -145,11 +146,15 @@ def cosignVerifyBlob(metaDataFile){
         sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub}' --signature '${sig}' 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
+def cosignClean(imageName){
+    sh(script:"cosign clean -f '${imageName}' > cosign_clean_log 2>&1", returnStatus:true)
+}
 
 def cosignAttest(imageName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         echo "## At 1"
 	    dir("cosign-metadatafiles"){
+            sh("cosign attest -h")
             echo "## At 2"
 		    def files = findFiles(glob: '*.json')
             echo "## At 3 files: ${files}"
@@ -157,7 +162,7 @@ def cosignAttest(imageName){
                 echo "## At 4"
                 files.each { file ->
                     echo "## At 5 metaDatafile: ${file}"
-                    sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate '${file}' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
+                    sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest -y --key '${cosign_pvt}' --predicate '${file}' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
                 }
 		    }
 	    }
@@ -167,7 +172,7 @@ def cosignAttest(imageName){
 def cosignAttestFile(imageName, metaDataFileName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
 	    dir("cosign-metadatafiles"){
-            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate '${metaDataFileName}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
+            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest -y --key '${cosign_pvt}' --force --predicate '${metaDataFileName}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
         }
     }
 }
