@@ -165,8 +165,8 @@ def cosignAttest(imageName){
                     echo "## At 5 metaDatafile: ${file}"
                     sh("cat ${file}")
                     def fileName = "${file}".split("-MetaData.json")
-                    echo "## At 5 fileName: ${fileName}"
-                    cosignVerifyBlob("${fileName}")
+                    echo "## At 5 fileName: ${fileName[0]}"
+                    cosignVerifyBlob("${fileName[0]}")
                     sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest -y --key '${cosign_pvt}' --predicate '${file}' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
                 }
 		    }
