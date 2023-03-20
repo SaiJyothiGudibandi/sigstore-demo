@@ -60,8 +60,8 @@ node("jenkins-slave"){
 	    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
             sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
             sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
-            // build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":["credentials": "docker-login", "url": "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0", "checksum": "f5f92ef4e533ecffa18d058bee91cd818de3ba8145bfa63e19c0a7da31bca5df"]]
-            // createMetadataFile("Docker-Build", build_metaData)
+            build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":["credentials": "docker-login", "url": "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0", "checksum": "f5f92ef4e533ecffa18d058bee91cd818de3ba8145bfa63e19c0a7da31bca5df"]]
+            createMetadataFile("Docker-Build", build_metaData)
             // cosignAttest(imageName)
 	    }
 	    echo("----- COMPLETED Docker Publish-----")
@@ -143,7 +143,7 @@ def cosignVerifyBlob(metaDataFile){
 
 def cosignAttest(imageName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-	    dir(cosign-metadatafiles){
+	    dir("cosign-metadatafiles"){
 		    def files = findFiles(glob: '*.json')
 		    if ("${files.length}" >= 1) {
                 files.each { metaDatafile ->
