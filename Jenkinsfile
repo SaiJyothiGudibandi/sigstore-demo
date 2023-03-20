@@ -142,7 +142,7 @@ def cosignSignBlob(metaDataFile){
 def cosignVerifyBlob(metaDataFile){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         def sig 
-        sig = sh("cat 'cosign-metadatafiles/${metaDataFile}.sig'")
+        sig = sh("cat '${metaDataFile}.sig'")
         echo("## At sig: ${sig}")
         sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub}' --signature '${sig}' '${metaDataFile}-MetaData.json' --rekor-url 'https://rekor.sigstore.dev'")
     }
