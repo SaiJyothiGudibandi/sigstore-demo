@@ -143,21 +143,26 @@ def cosignVerifyBlob(metaDataFile){
 
 def cosignAttest(imageName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+        echo "## At 1"
 	    dir("cosign-metadatafiles"){
+            echo "## At 2"
 		    def files = findFiles(glob: '*.json')
+            echo "## At 3 files: ${files}"
 		    if ("${files.length}" >= 1) {
+                echo "## At 4"
                 files.each { metaDatafile ->
-                    sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
+                echo "## At 5 metaDatafile: ${metaDatafile}"
+                    sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
                 }
 		    }
 	    }
     }
 }
 
-def cosignAttestFile(imageName, metaDatafile){
+def cosignAttestFile(imageName, metaDataFileName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
 	    dir("cosign-metadatafiles"){
-            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
+            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFileName}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
         }
     }
 }
