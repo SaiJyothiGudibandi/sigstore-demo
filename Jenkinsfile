@@ -157,7 +157,7 @@ def cosignAttest(imageName){
                 echo "## At 4"
                 files.each { metaDatafile ->
                 echo "## At 5 metaDatafile: ${metaDatafile}"
-                    sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFile}' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
+                    sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate '${metaDataFile}' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
                 }
 		    }
 	    }
@@ -167,7 +167,7 @@ def cosignAttest(imageName){
 def cosignAttestFile(imageName, metaDataFileName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
 	    dir("cosign-metadatafiles"){
-            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate 'cosign-metadatafiles/${metaDataFileName}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
+            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest --key '${cosign_pvt}' --force --predicate '${metaDataFileName}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
         }
     }
 }
