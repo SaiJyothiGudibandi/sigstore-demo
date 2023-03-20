@@ -180,9 +180,12 @@ def cosignAttestFile(imageName, metaDataFileName){
 }
 
 def cosignVerifyAttestation(imageName){
-    withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
-        sh("ls -al")
-        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
+    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+        sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
+        withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
+            sh("ls -al")
+            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
+        }
     }
 }
 
