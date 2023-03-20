@@ -12,8 +12,10 @@ node("jenkins-slave"){
 
 	stage("Checkout"){
 		def scmVars = checkout scmGit(branches: [[name: '*/feature-demo-3']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
-        	echo "## At scmVars : ${scmVars}"
-		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["git_url": "${scmVars.GIT_URL}", "branch_name": "${env.BRANCH_NAME}", "committed_by": getCommitAuthorEmail()]]]
+        echo "## At scmVars : ${scmVars}"
+        def committed_by = getAuthorEmailForCommit(String "${scmVars.GIT_COMMIT}")
+        echo "## At committed_by : ${committed_by}"
+		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["git_url": "${scmVars.GIT_URL}", "branch_name": "${env.BRANCH_NAME}", "committed_by": "${committed_by}"]]]
 		createMetadataFile("Checkout", build_metaData)
 	}
 
@@ -176,17 +178,18 @@ def cosignVerifyAttestation(imageName){
 String getEnvtype(branch) {
     String envtype
     if (branch.startsWith("dev")) {
-        envtype = "DEV"
+        envtype = "INTEGRATION"
     } else if (branch.startsWith("verify")) {
         envtype = "VERIFY"
     } else if (branch.startsWith("master")) {
         envtype = "PROD"
     } else{
-        envtype = "FEATURE"
+        envtype = "SNAPSHOT"
     }
     return envtype
 }
 
-String getCommitAuthorEmail() {
-    sh("git log -1 --format='%ae'")
+String getAuthorEmailForCommit(String commitId) {
+    def gitCommitID = commitId.split("#")[0]
+    executeCommand("git log -1 --format='%ae' ${gitCommitID} | head -1")
 }
