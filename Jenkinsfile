@@ -119,15 +119,8 @@ node("jenkins-slave"){
 	stage('Verfication') {
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
             echo("----- BEGIN Verfication -----")
-            dir("cosign-metadatafiles"){
-		        def files = findFiles(glob: '*.json')
-		        if ("${files.length}" >= 1) {
-			        files.each { metaDatafile ->
-			        cosignVerifyAttestation(imageName)
-			    }
-		    }
-                    echo("----- COMPLETED Helm Publish -----")
-        	}
+            cosignVerifyAttestation(imageName)
+            echo("----- COMPLETED Helm Publish -----")
         }
 	}
 }
