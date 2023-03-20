@@ -191,5 +191,5 @@ String getEnvtype(branch) {
 
 String getAuthorEmailForCommit(String commitId) {
     def gitCommitID = commitId.split("#")[0]
-    executeCommand("git log -1 --format='%ae' ${gitCommitID} | head -1")
+    sh(script: "git log -1 --format='%ae' ${gitCommitID} | head -1", returnStdout: true).trim()
 }
