@@ -118,9 +118,9 @@ node("jenkins-slave"){
     // Cosign Verfication
 	stage('Verfication') {
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
-            echo("----- BEGIN Verfication -----")
+            echo("----- BEGIN Cosign Verfication -----")
             cosignVerifyAttestation(imageName)
-            echo("----- COMPLETED Helm Publish -----")
+            echo("----- COMPLETED Cosign Verfication -----")
         }
 	}
 }
