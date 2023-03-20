@@ -154,6 +154,7 @@ def cosignVerifyBlob(metaDataFile){
         sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub}' --signature '${sig}' 'cosign-metadatafiles/${metaDataFile}-MetaData.json' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
+
 def cosignClean(imageName){
     sh(script:"cosign clean -f '${imageName}' > cosign_clean_log 2>&1", returnStatus:true)
 }
@@ -187,7 +188,7 @@ def cosignAttestFile(imageName, metaDataFileName){
 
 def cosignVerifyAttestation(imageName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
+        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign-key}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
 
