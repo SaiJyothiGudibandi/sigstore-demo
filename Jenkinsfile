@@ -50,7 +50,7 @@ node("jenkins-slave"){
     stage('BlackDuck Scan') {
         echo("----- BEGIN BlackDuck Scan-----")
         echo("BlackDuck Scan is in progress")
-        build_metaData = ["environment" : "${envType}", "type": "blackduckquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
+        build_metaData = ["environment" : "${envType}", "type": "blackduckquality", "stage_properties":[ "enabled": "false", "scan_results": "pass"]]
         createMetadataFile("BlackDuck-Scan", build_metaData)
         echo("----- COMPLETED BlackDuck Scan-----")
     }
