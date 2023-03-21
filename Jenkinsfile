@@ -25,7 +25,6 @@ node("jenkins-slave"){
     // Code Build
 	stage("Code Build"){
 	    docker.image('kartikjena33/cosign:latest').inside('-u 0:0 -v /root/.m2:/root/.m2'){
-		    sh("cosign version")
 		    sh("mkdir -p cosign-metadatafiles")
 		    echo("----- BEGIN Code Build -----")
 		    sh 'mvn clean install'
@@ -179,7 +178,7 @@ def cosignAttest(imageName){
 def cosignAttestFile(imageName, metaDataFileName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
 	    dir("cosign-metadatafiles"){
-            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest -y --key '${cosign_pvt}' --force --predicate '${metaDataFileName}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
+            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest -y --key '${cosign_pvt}' --yes --predicate '${metaDataFileName}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
         }
     }
 }
@@ -234,7 +233,6 @@ def cosignVerifyHelmChart(helmChartName){
 
 def cosignAttestAndVerifyAttestionBlob(helmChart, helmPredicateContents){
     writeJSON(file: "cosign-metadatafiles/helmChartPredicate-MetaData.json", json: helmPredicateContents, pretty: 4)
-    sh("cosign attest-blob --help")
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest-blob --yes --key '${cosign_pvt}'--predicate cosign-metadatafiles/helmChartPredicate-MetaData.json --type \"spdxjson\" ${helmChart} --output-signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
     }
