@@ -226,7 +226,7 @@ def cosignSignHelmChart(helmChartName){
 def cosignVerifyHelmChart(helmChartName){
     withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
         def sig 
-        sig = sh(script: "cat 'cosign-metadatafiles/${helmChartName}.sig'", returnStdout: true).trim()
+        sig = sh(script: "cat '${helmChartName}.sig'", returnStdout: true).trim()
         sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub_key}' --signature '${sig}' '${helmChartName}' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
