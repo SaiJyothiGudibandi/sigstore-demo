@@ -20,7 +20,7 @@ node("jenkins-slave"){
 		echo "## At committed_by : ${committed_by}"
 		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["git_url": "${scmVars.GIT_URL}", "branch_name": "${env.BRANCH_NAME}", "committed_by": "${committed_by}"]]]
 		helmPredicateContents.put("Checkout", build_metaData)
-        createMetadataFile("Checkout", build_metaData)
+		createMetadataFile("Checkout", build_metaData)
 	}
 
     // Code Build
@@ -31,11 +31,11 @@ node("jenkins-slave"){
 		    sh 'mvn clean install'
 		    build_metaData = ["environment" : "${envType}", "type": "codebuild", "stage_properties": [ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["mvn clean install"]]]
 		    helmPredicateContents.put("Code-Build", build_metaData)
-            createMetadataFile("Code-Build", build_metaData)
-            dir("target"){
-                jarFileName = findFiles(glob: '*.jar')
-            }
-            cosignSignArtifact(jarFileName)
+		    createMetadataFile("Code-Build", build_metaData)
+		    dir("target"){
+			    jarFileName = findFiles(glob: '*.jar')
+		    }
+		    cosignSignArtifact(jarFileName)
 		    echo("----- COMPLETED Code Build -----")
 	    }
 	}
@@ -43,70 +43,70 @@ node("jenkins-slave"){
     // Sonar Scan
 	stage('Sonar Scan') {
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
-            echo("----- BEGIN Sonar Scan -----")
-            echo("Sonar Scan is in progress")
-            build_metaData = ["environment" : "${envType}", "type": "sonarquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
-            helmPredicateContents.put("Sonar-Scan", build_metaData)
-            createMetadataFile("Sonar-Scan", build_metaData)
-            echo("----- COMPLETED Sonar Scan -----")
+			echo("----- BEGIN Sonar Scan -----")
+			echo("Sonar Scan is in progress")
+			build_metaData = ["environment" : "${envType}", "type": "sonarquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
+			helmPredicateContents.put("Sonar-Scan", build_metaData)
+			createMetadataFile("Sonar-Scan", build_metaData)
+			echo("----- COMPLETED Sonar Scan -----")
 		}
     }
 
     //  Blackduck Scan 
     stage('BlackDuck Scan') {
-        echo("----- BEGIN BlackDuck Scan-----")
-        echo("BlackDuck Scan is in progress")
-        build_metaData = ["environment" : "${envType}", "type": "blackduckquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
-        helmPredicateContents.put("BlackDuck-Scan", build_metaData)
-        createMetadataFile("BlackDuck-Scan", build_metaData)
-        echo("----- COMPLETED BlackDuck Scan-----")
+	    echo("----- BEGIN BlackDuck Scan-----")
+	    echo("BlackDuck Scan is in progress")
+	    build_metaData = ["environment" : "${envType}", "type": "blackduckquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
+	    helmPredicateContents.put("BlackDuck-Scan", build_metaData)
+	    createMetadataFile("BlackDuck-Scan", build_metaData)
+	    echo("----- COMPLETED BlackDuck Scan-----")
     }
 
     // Docker Build
 	stage('Docker Build') {
-        echo("----- BEGIN Docker Build -----")
-        cosignVerifyArtifact(jarFileName)
-        sh 'docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 .'
-        build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":[ "running_on": "master", "application_image": "APPROVED", "command_executed": "docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 ."]]
-        helmPredicateContents.put("Docker-Build", build_metaData)
-        createMetadataFile("Docker-Build", build_metaData)
-        echo("----- COMPLETED Docker Build -----")
+		echo("----- BEGIN Docker Build -----")
+		cosignVerifyArtifact(jarFileName)
+		sh 'docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 .'
+		build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":[ "running_on": "master", "application_image": "APPROVED", "command_executed": "docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 ."]]
+		helmPredicateContents.put("Docker-Build", build_metaData)
+		createMetadataFile("Docker-Build", build_metaData)
+		echo("----- COMPLETED Docker Build -----")
     }
 
     // Docker Publish
 	stage('Docker Publish') {
-	    echo("----- BEGIN Docker Publish-----")
-	    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-            sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
-            sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
-            build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":["credentials": "docker-login", "url": "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0", "checksum": "f5f92ef4e533ecffa18d058bee91cd818de3ba8145bfa63e19c0a7da31bca5df"]]
-            helmPredicateContents.put("Docker-Publish", build_metaData)
-            createMetadataFile("Docker-Publish", build_metaData)
-            cosignClean(imageName)
-            cosignAttest(imageName)
-	    }
-	    echo("----- COMPLETED Docker Publish-----")
+		echo("----- BEGIN Docker Publish-----")
+		withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+			sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
+			sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
+			build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":["credentials": "docker-login", "url": "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0", "checksum": "f5f92ef4e533ecffa18d058bee91cd818de3ba8145bfa63e19c0a7da31bca5df"]]
+			helmPredicateContents.put("Docker-Publish", build_metaData)
+			createMetadataFile("Docker-Publish", build_metaData)
+			cosignClean(imageName)
+			cosignAttest(imageName)
+		}
+		echo("----- COMPLETED Docker Publish-----")
     }
 
     // Helm Build
     stage('Helm Build') {
-        docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
-            echo("----- BEGIN Helm Build -----")
-            dir("mychart/"){
-                sh("helm package --sign --key 'CI-Pipeline' .")
-                // sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
-            }
-            cosignSignHelmChart(helmChart)
-            build_metaData = ["environment" : "${envType}", "type": "helmbuild", "stage_properties":[ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["helm package --sign --key 'CI-Pipeline' .", "helm sigstore upload sigstore-demo-1.0.5.tgz"]]]
-            helmPredicateContents.put("Helm-Build", build_metaData)
-            createMetadataFile("Helm-Build", build_metaData)
-            withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
-                cosignAttestFile(imageName, "helm-build")
-            }
-            echo("----- COMPLETED Helm Build -----")
-        }
-	}
+	    docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
+		    echo("----- BEGIN Helm Build -----")
+		    dir("mychart/"){
+			    sh("helm package --sign --key 'CI-Pipeline' .")
+			    // sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
+		    }
+		    cosignSignHelmChart(helmChart)
+		    build_metaData = ["environment" : "${envType}", "type": "helmbuild", "stage_properties":[ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["helm package --sign --key 'CI-Pipeline' .", "helm sigstore upload sigstore-demo-1.0.5.tgz"]]]
+		    helmPredicateContents.put("Helm-Build", build_metaData)
+		    createMetadataFile("Helm-Build", build_metaData)
+		    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+			    sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
+			    cosignAttestFile(imageName, "helm-build")
+		    }
+		    echo("----- COMPLETED Helm Build -----")
+	    }
+    }
 
     // Helm Publish
     stage('Helm Publish') {
