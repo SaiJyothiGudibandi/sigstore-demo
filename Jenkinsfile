@@ -129,15 +129,23 @@ node("jenkins-slave"){
             createMetadataFile("Helm-Publish", build_metaData)
             withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                 sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
-		cosignVerifyBlob("cosign-metadatafiles/helm-publish")
+                cosignVerifyBlob("cosign-metadatafiles/helm-publish")
                 cosignAttestFile(imageName, "helm-publish")
             }
-	    writeJSON(file: "cosign-metadatafiles/helmChartPredicate-MetaData.json", json: helmPredicateContents, pretty: 4)
-	    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-		sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest-blob --key '${cosign_pvt}' -y --predicate cosign-metadatafiles/helmChartPredicate-MetaData.json --type \"spdxjson\" ${helmChart} --output-signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
-	    }
+            writeJSON(file: "cosign-metadatafiles/helmChartPredicate-MetaData.json", json: helmPredicateContents, pretty: 4)
+            withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+                sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest-blob --key '${cosign_pvt}' -y --predicate cosign-metadatafiles/helmChartPredicate-MetaData.json --type \"spdxjson\" ${helmChart} --output-signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
+            }
             echo("----- COMPLETED Helm Publish -----")
         }
+	}
+    //Tampering docker artifact
+    stage('Tampering docker artifact') {
+        sh("docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 -f Dockerfile2 .")
+        withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+			sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
+			sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
+		}
 	}
 
     // Cosign Verfication
@@ -147,6 +155,14 @@ node("jenkins-slave"){
             cosignVerifyAttestation(imageName)
             cosignVerifyAttestionBlob(helmChart)
             echo("----- COMPLETED Helm Publish -----")
+        }
+	}
+
+    // Deploy to CD
+	stage('Deploy to CD') {
+            echo("----- BEGIN Deploy to CD -----")
+            echo("Deploy to CD is in progress")
+            echo("----- COMPLETED Deploy to CD -----")
         }
 	}
 }
@@ -201,13 +217,17 @@ def cosignAttestFile(imageName, metaDataFileName){
 }
 
 def cosignVerifyAttestation(imageName){
-    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-        sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
-        withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
-            sh("ls -al")
-            sh("cat rekor-policy.rego")
-            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
+    try{
+        withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+            sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
+            withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
+                sh("ls -al")
+                sh("cat rekor-policy.rego")
+                sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${imageName} --policy 'rekor-policy.rego' --rekor-url 'https://rekor.sigstore.dev'")
+            }
         }
+    }catch(Exception ex){
+        error("Verification of Docker failed as the artifact might have got tampered")
     }
 }
 
@@ -249,8 +269,12 @@ def cosignVerifyHelmChart(helmChartName){
 }
 
 def cosignVerifyAttestionBlob(helmChart){
-    withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
-        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
+    try{
+        withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
+            sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
+        }
+    }catch(Exception ex){
+        error("Verification of Helm chart failed as the artifact might have got tampered")
     }
 }
 
