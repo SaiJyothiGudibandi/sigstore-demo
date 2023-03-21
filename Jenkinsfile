@@ -132,6 +132,10 @@ node("jenkins-slave"){
 		cosignVerifyBlob("cosign-metadatafiles/helm-publish")
                 cosignAttestFile(imageName, "helm-publish")
             }
+	    writeJSON(file: "cosign-metadatafiles/helmChartPredicate-MetaData.json", json: helmPredicateContents, pretty: 4)
+	    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+		sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest-blob --key '${cosign_pvt}' -y --predicate cosign-metadatafiles/helmChartPredicate-MetaData.json --type \"spdxjson\" ${helmChart} --output-signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
+	    }
             echo("----- COMPLETED Helm Publish -----")
         }
 	}
@@ -141,7 +145,7 @@ node("jenkins-slave"){
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
             echo("----- BEGIN Verfication -----")
             cosignVerifyAttestation(imageName)
-            cosignAttestAndVerifyAttestionBlob(helmChart, helmPredicateContents)
+            cosignVerifyAttestionBlob(helmChart)
             echo("----- COMPLETED Helm Publish -----")
         }
 	}
@@ -244,11 +248,7 @@ def cosignVerifyHelmChart(helmChartName){
     }
 }
 
-def cosignAttestAndVerifyAttestionBlob(helmChart, helmPredicateContents){
-    writeJSON(file: "cosign-metadatafiles/helmChartPredicate-MetaData.json", json: helmPredicateContents, pretty: 4)
-    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest-blob --key '${cosign_pvt}' -y --predicate cosign-metadatafiles/helmChartPredicate-MetaData.json --type \"spdxjson\" ${helmChart} --output-signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
-    }
+def cosignVerifyAttestionBlob(helmChart){
     withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
     }
