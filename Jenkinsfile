@@ -219,7 +219,7 @@ String getAuthorEmailForCommit() {
 
 def cosignSignHelmChart(helmChartName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob -y --key '${cosign_pvt}' '${helmChartName}' --output-signature 'cosign-metadatafiles/${helmChartName}.sig' --rekor-url 'https://rekor.sigstore.dev'")
+        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob -y --key '${cosign_pvt}' '${helmChartName}' --output-signature '${helmChartName}.sig' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
 
