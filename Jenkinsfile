@@ -79,7 +79,8 @@ node("jenkins-slave"){
             echo("----- BEGIN Helm Build -----")
             dir("mychart/"){
                 sh("helm package --sign --key 'CI-Pipeline' .")
-                sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
+                cosignSignHelmChart("sigstore-demo-1.0.5.tgz")
+                // sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
             }
             build_metaData = ["environment" : "${envType}", "type": "helmbuild", "stage_properties":[ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["helm package --sign --key 'CI-Pipeline' .", "helm sigstore upload sigstore-demo-1.0.5.tgz"]]]
             createMetadataFile("Helm-Build", build_metaData)
@@ -95,9 +96,10 @@ node("jenkins-slave"){
     stage('Helm Publish') {
         docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
             echo("----- BEGIN Helm Publish -----")
+            cosignVerifyHelmChart("sigstore-demo-1.0.5.tgz", "mychart")
             dir("mychart/"){
                 sh("gcloud auth configure-docker us-central1-docker.pkg.dev --quiet")
-                sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
+                // sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
                 sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
             }
             build_metaData = ["environment" : "${envType}", "type": "helmpublish", "stage_properties":[ "credentials": "jfrog-artifact", "url": "oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local/sigstore-demo-1.0.5.tgz", "checksum": "b3414aa09d1157af794ef65d699bf3b8d2a8bc784aaceb2ceb152d9918de5380"]]
@@ -201,4 +203,18 @@ String getAuthorEmailForCommit(String commitId) {
 
 String getAuthorEmailForCommit() {
     sh "(git log -n 1 --pretty=format:'%H')".trim()
+}
+
+def cosignSignHelmChart(helmChartName){
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob -y --key '${cosign_pvt}' '${helmChartName}' --output-signature 'cosign-metadatafiles/${helmChartName}.sig' --rekor-url 'https://rekor.sigstore.dev'")
+    }
+}
+
+def cosignVerifyHelmChart(helmChartName, helmDir){
+    withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
+        def sig 
+        sig = sh(script: "cat 'cosign-metadatafiles/${helmChartName}.sig'", returnStdout: true).trim()
+        sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub_key}' --signature '${sig}' '${helmDir}/${helmChartName}' --rekor-url 'https://rekor.sigstore.dev'")
+    }
 }
