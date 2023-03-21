@@ -233,6 +233,7 @@ def cosignVerifyHelmChart(helmChartName){
 
 def cosignAttestAndVerifyAttestionBlob(helmChart, helmPredicateContents){
     writeJSON(file: "cosign-metadatafiles/helmChartPredicate-MetaData.json", json: helmPredicateContents, pretty: 4)
+    sh("cosign attest-blob --help")
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest-blob --yes --key '${cosign_pvt}'--predicate cosign-metadatafiles/helmChartPredicate-MetaData.json --type \"spdxjson\" ${helmChart} --output-signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
     }
