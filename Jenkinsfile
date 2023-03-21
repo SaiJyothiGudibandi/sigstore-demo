@@ -3,12 +3,12 @@
 // cosign-pub (public key)
 
 def build_metaData
+def helmPredicateContents
 
 node("jenkins-slave"){
     def envType = getEnvtype("${env.BRANCH_NAME}")
     def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
     def helmChart = "mychart/sigstore-demo-1.0.5.tgz"
-    def helmPredicateContents = [:]
 
     // Chekout
 	stage("Checkout"){
