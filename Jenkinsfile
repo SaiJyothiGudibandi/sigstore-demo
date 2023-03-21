@@ -9,7 +9,7 @@ node("jenkins-slave"){
     def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
     def helmChart = "mychart/sigstore-demo-1.0.5.tgz"
     def helmPredicateContents =[:]
-    def jarFileName
+    def jarNameList = []
 
     // Chekout
 	stage("Checkout"){
@@ -33,8 +33,11 @@ node("jenkins-slave"){
 		    helmPredicateContents.put("Code-Build", build_metaData)
 		    createMetadataFile("Code-Build", build_metaData)
 		    dir("target"){
-			    jarFileName = findFiles(glob: '*.jar')
-			    cosignSignArtifact(jarFileName)
+			    def jars = findFiles(glob: '*.jar')
+			    jars.each{ jarName ->
+				    jarNameList.add(jarName)
+				    cosignSignArtifact(jarName)
+			    }
 		    }
 		    echo("----- COMPLETED Code Build -----")
 	    }
@@ -65,7 +68,9 @@ node("jenkins-slave"){
     // Docker Build
 	stage('Docker Build') {
 		echo("----- BEGIN Docker Build -----")
-		cosignVerifyArtifact("target/${jarFileName}")
+		jarNameList.each{ jarName ->
+			cosignVerifyArtifact("target/${jarName}")
+		}
 		sh 'docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 .'
 		build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":[ "running_on": "master", "application_image": "APPROVED", "command_executed": "docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 ."]]
 		helmPredicateContents.put("Docker-Build", build_metaData)
