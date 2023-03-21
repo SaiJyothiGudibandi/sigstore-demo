@@ -79,9 +79,9 @@ node("jenkins-slave"){
             echo("----- BEGIN Helm Build -----")
             dir("mychart/"){
                 sh("helm package --sign --key 'CI-Pipeline' .")
-                cosignSignHelmChart("sigstore-demo-1.0.5.tgz")
                 // sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
             }
+	    cosignSignHelmChart("sigstore-demo-1.0.5.tgz", "mychart")
             build_metaData = ["environment" : "${envType}", "type": "helmbuild", "stage_properties":[ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["helm package --sign --key 'CI-Pipeline' .", "helm sigstore upload sigstore-demo-1.0.5.tgz"]]]
             createMetadataFile("Helm-Build", build_metaData)
             withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
@@ -205,9 +205,9 @@ String getAuthorEmailForCommit() {
     sh "(git log -n 1 --pretty=format:'%H')".trim()
 }
 
-def cosignSignHelmChart(helmChartName){
+def cosignSignHelmChart(helmChartName, helmDir){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob -y --key '${cosign_pvt}' '${helmChartName}' --output-signature 'cosign-metadatafiles/${helmChartName}.sig' --rekor-url 'https://rekor.sigstore.dev'")
+        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob -y --key '${cosign_pvt}' '${helmDir}/${helmChartName}' --output-signature 'cosign-metadatafiles/${helmChartName}.sig' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
 
