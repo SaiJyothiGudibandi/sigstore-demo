@@ -3,12 +3,12 @@
 // cosign-pub (public key)
 
 def build_metaData
-def helmPredicateContents
 
 node("jenkins-slave"){
     def envType = getEnvtype("${env.BRANCH_NAME}")
     def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
     def helmChart = "mychart/sigstore-demo-1.0.5.tgz"
+    def helmPredicateContents =[:]
 
     // Chekout
 	stage("Checkout"){
@@ -17,7 +17,8 @@ node("jenkins-slave"){
 		def committed_by = getAuthorEmailForCommit("${scmVars.GIT_COMMIT}")
 		echo "## At committed_by : ${committed_by}"
 		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["git_url": "${scmVars.GIT_URL}", "branch_name": "${env.BRANCH_NAME}", "committed_by": "${committed_by}"]]]
-		createMetadataFile("Checkout", build_metaData)
+		helmPredicateContents.put("Checkout", build_metaData)
+        createMetadataFile("Checkout", build_metaData)
 	}
 
     // Code Build
@@ -27,7 +28,8 @@ node("jenkins-slave"){
 		    echo("----- BEGIN Code Build -----")
 		    sh 'mvn clean install'
 		    build_metaData = ["environment" : "${envType}", "type": "codebuild", "stage_properties": [ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["mvn clean install"]]]
-		    createMetadataFile("Code-Build", build_metaData)
+		    helmPredicateContents.put("Code-Build", build_metaData)
+            createMetadataFile("Code-Build", build_metaData)
 		    echo("----- COMPLETED Code Build -----")
 	    }
 	}
@@ -38,6 +40,7 @@ node("jenkins-slave"){
             echo("----- BEGIN Sonar Scan -----")
             echo("Sonar Scan is in progress")
             build_metaData = ["environment" : "${envType}", "type": "sonarquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
+            helmPredicateContents.put("Sonar-Scan", build_metaData)
             createMetadataFile("Sonar-Scan", build_metaData)
             echo("----- COMPLETED Sonar Scan -----")
 		}
@@ -48,6 +51,7 @@ node("jenkins-slave"){
         echo("----- BEGIN BlackDuck Scan-----")
         echo("BlackDuck Scan is in progress")
         build_metaData = ["environment" : "${envType}", "type": "blackduckquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
+        helmPredicateContents.put("BlackDuck-Scan", build_metaData)
         createMetadataFile("BlackDuck-Scan", build_metaData)
         echo("----- COMPLETED BlackDuck Scan-----")
     }
@@ -57,6 +61,7 @@ node("jenkins-slave"){
         echo("----- BEGIN Docker Build -----")
         sh 'docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 .'
         build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":[ "running_on": "master", "application_image": "APPROVED", "command_executed": "docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 ."]]
+        helmPredicateContents.put("Docker-Build", build_metaData)
         createMetadataFile("Docker-Build", build_metaData)
         echo("----- COMPLETED Docker Build -----")
     }
@@ -68,6 +73,7 @@ node("jenkins-slave"){
             sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
             sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
             build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":["credentials": "docker-login", "url": "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0", "checksum": "f5f92ef4e533ecffa18d058bee91cd818de3ba8145bfa63e19c0a7da31bca5df"]]
+            helmPredicateContents.put("Docker-Publish", build_metaData)
             createMetadataFile("Docker-Publish", build_metaData)
             cosignClean(imageName)
             cosignAttest(imageName)
@@ -83,8 +89,9 @@ node("jenkins-slave"){
                 sh("helm package --sign --key 'CI-Pipeline' .")
                 // sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
             }
-	    cosignSignHelmChart(helmChart)
+            cosignSignHelmChart(helmChart)
             build_metaData = ["environment" : "${envType}", "type": "helmbuild", "stage_properties":[ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["helm package --sign --key 'CI-Pipeline' .", "helm sigstore upload sigstore-demo-1.0.5.tgz"]]]
+            helmPredicateContents.put("Helm-Build", build_metaData)
             createMetadataFile("Helm-Build", build_metaData)
             withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                 sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
@@ -105,6 +112,7 @@ node("jenkins-slave"){
                 sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
             }
             build_metaData = ["environment" : "${envType}", "type": "helmpublish", "stage_properties":[ "credentials": "jfrog-artifact", "url": "oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local/sigstore-demo-1.0.5.tgz", "checksum": "b3414aa09d1157af794ef65d699bf3b8d2a8bc784aaceb2ceb152d9918de5380"]]
+            helmPredicateContents.put("Helm-Publish", build_metaData)
             createMetadataFile("Helm-Publish", build_metaData)
             withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                 sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
@@ -119,7 +127,8 @@ node("jenkins-slave"){
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
             echo("----- BEGIN Verfication -----")
             cosignVerifyAttestation(imageName)
-            cosignAttestAndVerifyAttestionBlob(helmChart)
+            echo("helmPredicateContents is ${helmPredicateContents}")
+            cosignAttestAndVerifyAttestionBlob(helmChart, helmPredicateContents)
             echo("----- COMPLETED Helm Publish -----")
         }
 	}
@@ -127,7 +136,6 @@ node("jenkins-slave"){
 
 def createMetadataFile(stageName, metaData) {
     stageName = stageName.replaceAll("[^a-zA-Z0-9-]+", "-").toLowerCase()
-    helmPredicateContents.put(stageName, metaData)
     writeJSON(file: "cosign-metadatafiles/${stageName}-MetaData.json", json: metaData, pretty: 4)
     cosignSignBlob(stageName)
     sh("ls -al cosign-metadatafiles/")
@@ -223,7 +231,7 @@ def cosignVerifyHelmChart(helmChartName){
     }
 }
 
-def cosignAttestAndVerifyAttestionBlob(helmChart){
+def cosignAttestAndVerifyAttestionBlob(helmChart, helmPredicateContents){
     writeJSON(file: "cosign-metadatafiles/helmChartPredicate-MetaData.json", json: helmPredicateContents, pretty: 4)
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest-blob -y --key '${cosign_pvt}' --force --predicate cosign-metadatafiles/helmChartPredicate-MetaData.json --type \"spdxjson\" ${helmChartName} --output-signature ${helmChartName}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
