@@ -261,7 +261,7 @@ def cosignSignArtifact(jarFileName){
 def cosignVerifyArtifact(jarFileName){
     withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
         def sig 
-        sig = sh(script: "cat '${helmChartName}.sig'", returnStdout: true).trim()
+        sig = sh(script: "cat '${jarFileName}.sig'", returnStdout: true).trim()
         sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub_key}' --signature '${sig}' '${jarFileName}' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
