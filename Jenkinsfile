@@ -160,11 +160,10 @@ node("jenkins-slave"){
 
     // Deploy to CD
 	stage('Deploy to CD') {
-            echo("----- BEGIN Deploy to CD -----")
-            echo("Deploy to CD is in progress")
-            echo("----- COMPLETED Deploy to CD -----")
-        }
-	}
+        echo("----- BEGIN Deploy to CD -----")
+        echo("Deploy to CD is in progress")
+        echo("----- COMPLETED Deploy to CD -----")
+    }
 }
 
 def createMetadataFile(stageName, metaData) {
