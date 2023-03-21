@@ -25,6 +25,7 @@ node("jenkins-slave"){
     // Code Build
 	stage("Code Build"){
 	    docker.image('kartikjena33/cosign:latest').inside('-u 0:0 -v /root/.m2:/root/.m2'){
+		    sh("cosign version")
 		    sh("mkdir -p cosign-metadatafiles")
 		    echo("----- BEGIN Code Build -----")
 		    sh 'mvn clean install'
