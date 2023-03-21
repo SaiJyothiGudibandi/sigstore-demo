@@ -179,7 +179,7 @@ def cosignAttestFile(imageName, metaDataFileName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
 	    dir("cosign-metadatafiles"){
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest -y --key '${cosign_pvt}' --predicate '${metaDataFileName}-MetaData.json' --type \"spdxjson\" ${imageName} --rekor-url 'https://rekor.sigstore.dev'")
-      
+        }
     }
 }
 
