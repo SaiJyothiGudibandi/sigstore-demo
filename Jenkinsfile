@@ -107,6 +107,7 @@ node("jenkins-slave"){
 		    createMetadataFile("Helm-Build", build_metaData)
 		    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
 			    sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
+			    cosignVerifyBlob("cosign-metadatafiles/helm-build")
 			    cosignAttestFile(imageName, "helm-build")
 		    }
 		    echo("----- COMPLETED Helm Build -----")
@@ -128,6 +129,7 @@ node("jenkins-slave"){
             createMetadataFile("Helm-Publish", build_metaData)
             withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                 sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
+		cosignVerifyBlob("cosign-metadatafiles/helm-publish")
                 cosignAttestFile(imageName, "helm-publish")
             }
             echo("----- COMPLETED Helm Publish -----")
