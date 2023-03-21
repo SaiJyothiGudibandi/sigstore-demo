@@ -9,6 +9,7 @@ node("jenkins-slave"){
     def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
     def helmChart = "mychart/sigstore-demo-1.0.5.tgz"
     def helmPredicateContents =[:]
+    def jarFileName
 
     // Chekout
 	stage("Checkout"){
@@ -31,6 +32,10 @@ node("jenkins-slave"){
 		    build_metaData = ["environment" : "${envType}", "type": "codebuild", "stage_properties": [ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["mvn clean install"]]]
 		    helmPredicateContents.put("Code-Build", build_metaData)
             createMetadataFile("Code-Build", build_metaData)
+            dir("target"){
+                jarFileName = findFiles(glob: '*.jar')
+            }
+            cosignSignArtifact(jarFileName)
 		    echo("----- COMPLETED Code Build -----")
 	    }
 	}
@@ -60,6 +65,7 @@ node("jenkins-slave"){
     // Docker Build
 	stage('Docker Build') {
         echo("----- BEGIN Docker Build -----")
+        cosignVerifyArtifact(jarFileName)
         sh 'docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 .'
         build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":[ "running_on": "master", "application_image": "APPROVED", "command_executed": "docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 ."]]
         helmPredicateContents.put("Docker-Build", build_metaData)
@@ -238,5 +244,19 @@ def cosignAttestAndVerifyAttestionBlob(helmChart, helmPredicateContents){
     }
     withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
+    }
+}
+
+def cosignSignArtifact(jarFileName){
+    withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+        sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob -y --key '${cosign_pvt}' '${jarFileName}' --output-signature '${jarFileName}.sig' --rekor-url 'https://rekor.sigstore.dev'")
+    }
+}
+
+def cosignVerifyArtifact(jarFileName){
+    withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
+        def sig 
+        sig = sh(script: "cat '${helmChartName}.sig'", returnStdout: true).trim()
+        sh("COSIGN_EXPERIMENTAL=1 cosign verify-blob --key '${cosign_pub_key}' --signature '${sig}' '${jarFileName}' --rekor-url 'https://rekor.sigstore.dev'")
     }
 }
