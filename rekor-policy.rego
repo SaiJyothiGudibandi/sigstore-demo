@@ -46,3 +46,4 @@ allow = false {
    input.predicate.type == "sonarquality"
    input.predicate.stage_properties.scan_status != "PASSED"
 }
+
