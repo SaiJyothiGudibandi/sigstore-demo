@@ -168,15 +168,15 @@ node("jenkins-slave"){
         }
 	}
 
-    // Deploy to CD
-	stage('Deploy to CD') {
+    // Deploy
+	stage('Deploy') {
         if (status == "FAILED"){
-            echo("----- SKIP Deploy to CD -----")
-            Utils.markStageSkippedForConditional("Deploy to CD")
+            echo("----- SKIP Deploy -----")
+            Utils.markStageSkippedForConditional("Deploy")
         }else{
-            echo("----- BEGIN Deploy to CD -----")
-            echo("Deploy to CD is in progress")
-            echo("----- COMPLETED Deploy to CD -----")
+            echo("----- BEGIN Deploy -----")
+            echo("Deploy is in progress")
+            echo("----- COMPLETED Deploy -----")
         }
     }
 }
@@ -241,7 +241,10 @@ def cosignVerifyAttestation(imageName){
             }
         }
     }catch(Exception ex){
-        error("Verification of Docker failed as the artifact is tampered, hence Skipping Deploy to CD.")
+        ansiColor('xterm') {
+            echo("\u001b[1m\u001b[31mVerification of Docker failed as the artifact is tampered, hence Skipping Deploy. \u001b[0m ")
+        }
+        error("Verification Failed.")
     }
 }
 
@@ -288,7 +291,10 @@ def cosignVerifyAttestionBlob(helmChart){
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
         }
     }catch(Exception ex){
-        error("Verification of Helm chart failed as the artifact is tampered, hence Skipping Deploy to CD.")
+        ansiColor('xterm') {
+            echo("\u001b[1m\u001b[31mVerification of Helm chart failed as the artifact is tampered, hence Skipping Deploy. \u001b[0m ")
+        }
+        error("Verification Failed.")
     }
 }
 
