@@ -143,13 +143,13 @@ node("jenkins-slave"){
         }
 	}
     //Tampering docker artifact
-    stage('Tampering docker artifact') {
-        sh("docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 -f Dockerfile-new .")
-        withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-			sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
-			sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
-		}
-	}
+    // stage('Tampering docker artifact') {
+    //     sh("docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 -f Dockerfile-new .")
+    //     withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+	// 		sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
+	// 		sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
+	// 	}
+	// }
 
     // Cosign Verfication
 	stage('Verfication') {
