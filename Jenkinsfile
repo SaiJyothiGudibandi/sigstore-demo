@@ -170,9 +170,8 @@ node("jenkins-slave"){
 def createMetadataFile(stageName, metaData) {
     stageName = stageName.replaceAll("[^a-zA-Z0-9-]+", "-").toLowerCase()
     writeJSON(file: "cosign-metadatafiles/${stageName}-MetaData.json", json: metaData, pretty: 4)
-    cosignSignBlob(stageName)
-    sh("ls -al cosign-metadatafiles/")
     sh("cat cosign-metadatafiles/${stageName}-MetaData.json")
+    cosignSignBlob(stageName)
 }
 
 def cosignSignBlob(metaDataFile){
