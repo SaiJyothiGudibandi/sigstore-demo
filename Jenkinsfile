@@ -163,8 +163,7 @@ node("jenkins-slave"){
             }
         }catch(Exception ex){
             catchError(stageResult: 'FAILURE') {
-                echo("status is ${helmStatus} ${dockerStatus}")
-                echo("Verification Failed.")
+                error("Verification Failed.")
             }
         }
 	}
