@@ -161,9 +161,11 @@ node("jenkins-slave"){
                 helmStatus = cosignVerifyAttestionBlob(helmChart)
                 echo("----- COMPLETED Helm Publish -----")
             }
-        }catchError(stageResult: 'FAILURE') {
-            echo("status is ${helmStatus} ${dockerStatus}")
-            echo("Verification Failed.")
+        }catch(Exception ex){
+            catchError(stageResult: 'FAILURE') {
+                echo("status is ${helmStatus} ${dockerStatus}")
+                echo("Verification Failed.")
+            }
         }
 	}
 
