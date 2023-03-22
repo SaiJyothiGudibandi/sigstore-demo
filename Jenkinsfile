@@ -1,8 +1,10 @@
 // Credential ID:
 // cosign-key (private key)
 // cosign-pub (public key)
+import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 
 def build_metaData
+def status
 
 node("jenkins-slave"){
     def envType = getEnvtype("${env.BRANCH_NAME}")
@@ -140,13 +142,13 @@ node("jenkins-slave"){
         }
 	}
     //Tampering docker artifact
-    stage('Tampering docker artifact') {
-        sh("docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 -f Dockerfile-new .")
-        withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-			sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
-			sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
-		}
-	}
+    // stage('Tampering docker artifact') {
+    //     sh("docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 -f Dockerfile-new .")
+    //     withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+	// 		sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
+	// 		sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
+	// 	}
+	// }
 
     // Cosign Verfication
 	stage('Verfication') {
@@ -161,6 +163,8 @@ node("jenkins-slave"){
     // Deploy to CD
 	stage('Deploy to CD') {
         echo("----- BEGIN Deploy to CD -----")
+        if (status && status == "FAILED")
+                Utils.markStageSkippedForConditional("Deploy to CD")
         echo("Deploy to CD is in progress")
         echo("----- COMPLETED Deploy to CD -----")
     }
@@ -226,6 +230,7 @@ def cosignVerifyAttestation(imageName){
             }
         }
     }catch(Exception ex){
+        status = "FAILED"
         error("Verification of Docker failed as the artifact is tampered, hence Skipping Deploy to CD.")
     }
 }
@@ -273,6 +278,7 @@ def cosignVerifyAttestionBlob(helmChart){
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
         }
     }catch(Exception ex){
+        status = "FAILED"
         error("Verification of Helm chart failed as the artifact is tampered, hence Skipping Deploy to CD.")
     }
 }
