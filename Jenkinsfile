@@ -4,15 +4,20 @@
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 
 def build_metaData
+def config = [
+    "node" : "jenkins-slave"
+    "dockerStatus" : ""
+    "helmStatus" : ""
+]
 
-node("jenkins-slave"){
+node(config.node){
+    echo("config is ${config}")
     def envType = getEnvtype("${env.BRANCH_NAME}")
     def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
     def helmChart = "mychart/sigstore-demo-1.0.5.tgz"
     def helmPredicateContents =[:]
     def jarNameList = []
-    def dockerStatus
-    def helmStatus
+    
 
     // Chekout
 	stage("Checkout"){
