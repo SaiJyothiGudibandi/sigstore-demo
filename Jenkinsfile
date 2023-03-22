@@ -226,7 +226,7 @@ def cosignVerifyAttestation(imageName){
             }
         }
     }catch(Exception ex){
-        error("Verification of Docker failed as the artifact might have got tampered")
+        error("Verification of Docker failed as the artifact is tampered, hence Skipping Deploy to CD.")
     }
 }
 
@@ -273,7 +273,7 @@ def cosignVerifyAttestionBlob(helmChart){
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
         }
     }catch(Exception ex){
-        error("Verification of Helm chart failed as the artifact might have got tampered")
+        error("Verification of Helm chart failed as the artifact is tampered, hence Skipping Deploy to CD.")
     }
 }
 
