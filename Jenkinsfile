@@ -241,9 +241,7 @@ def cosignVerifyAttestation(imageName){
             }
         }
     }catch(Exception ex){
-        ansiColor('xterm') {
-            echo("\u001b[1m\u001b[31mVerification of Docker failed as the artifact is tampered, hence Skipping Deploy. \u001b[0m ")
-        }
+        echo("Verification of Docker failed as the artifact is tampered, hence Skipping Deploy.")
         error("Verification Failed.")
     }
 }
@@ -291,9 +289,7 @@ def cosignVerifyAttestionBlob(helmChart){
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
         }
     }catch(Exception ex){
-        ansiColor('xterm') {
-            echo("\u001b[1m\u001b[31mVerification of Helm chart failed as the artifact is tampered, hence Skipping Deploy. \u001b[0m ")
-        }
+        echo("Verification of Helm chart failed as the artifact is tampered, hence Skipping Deploy.")
         error("Verification Failed.")
     }
 }
