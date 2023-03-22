@@ -11,7 +11,6 @@ def config = [
 ]
 
 node(config.node){
-    echo("config is ${config}")
     def envType = getEnvtype("${env.BRANCH_NAME}")
     def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
     def helmChart = "mychart/sigstore-demo-1.0.5.tgz"
@@ -160,9 +159,9 @@ node(config.node){
 	stage('Verfication') {
 		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
             echo("----- BEGIN Verfication -----")
-            cosignVerifyAttestation(imageName, dockerStatus)
-            cosignVerifyAttestionBlob(helmChart, helmStatus)
-            echo("status is ${helmStatus} ${dockerStatus}")
+            cosignVerifyAttestation(imageName)
+            cosignVerifyAttestionBlob(helmChart)
+            echo("status is ${config.helmStatus} ${config.dockerStatus}")
             echo("----- COMPLETED Helm Publish -----")
         }
 	}
@@ -170,7 +169,7 @@ node(config.node){
     // Deploy to CD
 	stage('Deploy to CD') {
         echo("----- BEGIN Deploy to CD -----")
-        if (dockerStatus == "FAILED" || helmStatus == "FAILED")
+        if (config.dockerStatus == "FAILED" || config.helmStatus == "FAILED")
                 Utils.markStageSkippedForConditional("Deploy to CD")
         echo("Deploy to CD is in progress")
         echo("----- COMPLETED Deploy to CD -----")
@@ -226,7 +225,7 @@ def cosignAttestFile(imageName, metaDataFileName){
     }
 }
 
-def cosignVerifyAttestation(imageName, status){
+def cosignVerifyAttestation(imageName){
     try{
         withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
             sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
@@ -238,7 +237,7 @@ def cosignVerifyAttestation(imageName, status){
         }
     }catch(Exception ex){
         catchError(stageResult: 'FAILURE') {
-            dockerStatus = "FAILED"
+            config.dockerStatus = "FAILED"
             echo("Verification of Docker failed as the artifact is tampered, hence Skipping Deploy to CD.")
         }
     }
@@ -281,14 +280,14 @@ def cosignVerifyHelmChart(helmChartName){
     }
 }
 
-def cosignVerifyAttestionBlob(helmChart, helmStatus){
+def cosignVerifyAttestionBlob(helmChart){
     try{
         withCredentials([file(credentialsId: 'cosign-pub', variable: 'cosign_pub_key')]) {
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
         }
     }catch(Exception ex){
         catchError(stageResult: 'FAILURE') {
-            helmStatus = "FAILED"
+            config.helmStatus = "FAILED"
             echo("Verification of Helm chart failed as the artifact is tampered, hence Skipping Deploy to CD.")
         } 
     }
