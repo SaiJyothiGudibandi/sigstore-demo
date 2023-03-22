@@ -101,7 +101,7 @@ node("jenkins-slave"){
 	    docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
 		    echo("----- BEGIN Helm Build -----")
 		    dir("mychart/"){
-			    sh("helm package --sign --key 'CI-Pipeline' .")
+			    sh("helm package .")
 		    }
 		    cosignSignHelmChart(helmChart)
 		    build_metaData = ["environment" : "${envType}", "type": "helmbuild", "stage_properties":[ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["helm package --sign --key 'CI-Pipeline' .", "helm sigstore upload sigstore-demo-1.0.5.tgz"]]]
@@ -129,13 +129,13 @@ node("jenkins-slave"){
         }
 	}
     //Tampering docker artifact
-    stage('Tampering docker artifact') {
-        sh("docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 -f Dockerfile-new .")
-        withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-			sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
-			sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
-		}
-	}
+    // stage('Tampering docker artifact') {
+    //     sh("docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 -f Dockerfile-new .")
+    //     withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+	// 		sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
+	// 		sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
+	// 	}
+	// }
 
     // Cosign Verfication
 	stage('Verfication') {
