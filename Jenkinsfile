@@ -46,26 +46,26 @@ node("jenkins-slave"){
 	}
 
     // Sonar Scan
-	stage('Sonar Scan') {
-		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
-			echo("----- BEGIN Sonar Scan -----")
-			echo("Sonar Scan is in progress")
-			build_metaData = ["environment" : "${envType}", "type": "sonarquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
-			helmPredicateContents.put("Sonar-Scan", build_metaData)
-			createMetadataFile("Sonar-Scan", build_metaData)
-			echo("----- COMPLETED Sonar Scan -----")
-		}
-    }
+	// stage('Sonar Scan') {
+	// 	docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
+	// 		echo("----- BEGIN Sonar Scan -----")
+	// 		echo("Sonar Scan is in progress")
+	// 		build_metaData = ["environment" : "${envType}", "type": "sonarquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
+	// 		helmPredicateContents.put("Sonar-Scan", build_metaData)
+	// 		createMetadataFile("Sonar-Scan", build_metaData)
+	// 		echo("----- COMPLETED Sonar Scan -----")
+	// 	}
+    // }
 
     //  Blackduck Scan 
-    stage('BlackDuck Scan') {
-	    echo("----- BEGIN BlackDuck Scan-----")
-	    echo("BlackDuck Scan is in progress")
-	    build_metaData = ["environment" : "${envType}", "type": "blackduckquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
-	    helmPredicateContents.put("BlackDuck-Scan", build_metaData)
-	    createMetadataFile("BlackDuck-Scan", build_metaData)
-	    echo("----- COMPLETED BlackDuck Scan-----")
-    }
+    // stage('BlackDuck Scan') {
+	//     echo("----- BEGIN BlackDuck Scan-----")
+	//     echo("BlackDuck Scan is in progress")
+	//     build_metaData = ["environment" : "${envType}", "type": "blackduckquality", "stage_properties":[ "enabled": "true", "scan_results": "pass"]]
+	//     helmPredicateContents.put("BlackDuck-Scan", build_metaData)
+	//     createMetadataFile("BlackDuck-Scan", build_metaData)
+	//     echo("----- COMPLETED BlackDuck Scan-----")
+    // }
 
     // Docker Build
 	stage('Docker Build') {
@@ -96,51 +96,51 @@ node("jenkins-slave"){
     }
 
     // Helm Build
-    stage('Helm Build') {
-	    docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
-		    echo("----- BEGIN Helm Build -----")
-		    dir("mychart/"){
-			    sh("helm package --sign --key 'CI-Pipeline' .")
-			    // sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
-		    }
-		    cosignSignHelmChart(helmChart)
-		    build_metaData = ["environment" : "${envType}", "type": "helmbuild", "stage_properties":[ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["helm package --sign --key 'CI-Pipeline' .", "helm sigstore upload sigstore-demo-1.0.5.tgz"]]]
-		    helmPredicateContents.put("Helm-Build", build_metaData)
-		    createMetadataFile("Helm-Build", build_metaData)
-		    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-			    sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
-			    cosignVerifyBlob("cosign-metadatafiles/helm-build")
-			    cosignAttestFile(imageName, "helm-build")
-		    }
-		    echo("----- COMPLETED Helm Build -----")
-	    }
-    }
+    // stage('Helm Build') {
+	//     docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
+	// 	    echo("----- BEGIN Helm Build -----")
+	// 	    dir("mychart/"){
+	// 		    sh("helm package --sign --key 'CI-Pipeline' .")
+	// 		    // sh("helm sigstore upload sigstore-demo-1.0.5.tgz")
+	// 	    }
+	// 	    cosignSignHelmChart(helmChart)
+	// 	    build_metaData = ["environment" : "${envType}", "type": "helmbuild", "stage_properties":[ "running_on": "kartikjena33/cosign:latest", "stage_runner_image_status": "APPROVED", "command_executed": ["helm package --sign --key 'CI-Pipeline' .", "helm sigstore upload sigstore-demo-1.0.5.tgz"]]]
+	// 	    helmPredicateContents.put("Helm-Build", build_metaData)
+	// 	    createMetadataFile("Helm-Build", build_metaData)
+	// 	    withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+	// 		    sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
+	// 		    cosignVerifyBlob("cosign-metadatafiles/helm-build")
+	// 		    cosignAttestFile(imageName, "helm-build")
+	// 	    }
+	// 	    echo("----- COMPLETED Helm Build -----")
+	//     }
+    // }
 
     // Helm Publish
-    stage('Helm Publish') {
-        docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
-            echo("----- BEGIN Helm Publish -----")
-            cosignVerifyHelmChart(helmChart)
-            dir("mychart/"){
-                sh("gcloud auth configure-docker us-central1-docker.pkg.dev --quiet")
-                // sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
-                sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
-            }
-            build_metaData = ["environment" : "${envType}", "type": "helmpublish", "stage_properties":[ "credentials": "jfrog-artifact", "url": "oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local/sigstore-demo-1.0.5.tgz", "checksum": "b3414aa09d1157af794ef65d699bf3b8d2a8bc784aaceb2ceb152d9918de5380"]]
-            helmPredicateContents.put("Helm-Publish", build_metaData)
-            createMetadataFile("Helm-Publish", build_metaData)
-            withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
-                cosignVerifyBlob("cosign-metadatafiles/helm-publish")
-                cosignAttestFile(imageName, "helm-publish")
-            }
-            writeJSON(file: "cosign-metadatafiles/helmChartPredicate-MetaData.json", json: helmPredicateContents, pretty: 4)
-            withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
-                sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest-blob --key '${cosign_pvt}' -y --predicate cosign-metadatafiles/helmChartPredicate-MetaData.json --type \"spdxjson\" ${helmChart} --output-signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
-            }
-            echo("----- COMPLETED Helm Publish -----")
-        }
-	}
+    // stage('Helm Publish') {
+    //     docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
+    //         echo("----- BEGIN Helm Publish -----")
+    //         cosignVerifyHelmChart(helmChart)
+    //         dir("mychart/"){
+    //             sh("gcloud auth configure-docker us-central1-docker.pkg.dev --quiet")
+    //             // sh("helm sigstore verify sigstore-demo-1.0.5.tgz")
+    //             sh("helm push sigstore-demo-1.0.5.tgz oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local")
+    //         }
+    //         build_metaData = ["environment" : "${envType}", "type": "helmpublish", "stage_properties":[ "credentials": "jfrog-artifact", "url": "oci://us-central1-docker.pkg.dev/citric-nimbus-377218/helm-dev-local/sigstore-demo-1.0.5.tgz", "checksum": "b3414aa09d1157af794ef65d699bf3b8d2a8bc784aaceb2ceb152d9918de5380"]]
+    //         helmPredicateContents.put("Helm-Publish", build_metaData)
+    //         createMetadataFile("Helm-Publish", build_metaData)
+    //         withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+    //             sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
+    //             cosignVerifyBlob("cosign-metadatafiles/helm-publish")
+    //             cosignAttestFile(imageName, "helm-publish")
+    //         }
+    //         writeJSON(file: "cosign-metadatafiles/helmChartPredicate-MetaData.json", json: helmPredicateContents, pretty: 4)
+    //         withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
+    //             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign attest-blob --key '${cosign_pvt}' -y --predicate cosign-metadatafiles/helmChartPredicate-MetaData.json --type \"spdxjson\" ${helmChart} --output-signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
+    //         }
+    //         echo("----- COMPLETED Helm Publish -----")
+    //     }
+	// }
     //Tampering docker artifact
     stage('Tampering docker artifact') {
         sh("docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 -f Dockerfile-new .")
@@ -230,7 +230,7 @@ def cosignVerifyAttestation(imageName){
             }
         }
     }catch(Exception ex){
-        catchError(stageResult: 'FAILED') {
+        catchError(stageResult: 'FAILURE') {
             status = "FAILED"
             echo("Verification of Docker failed as the artifact is tampered, hence Skipping Deploy to CD.")
         }
@@ -280,7 +280,7 @@ def cosignVerifyAttestionBlob(helmChart){
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
         }
     }catch(Exception ex){
-        catchError(stageResult: 'FAILED') {
+        catchError(stageResult: 'FAILURE') {
             status = "FAILED"
             echo("Verification of Helm chart failed as the artifact is tampered, hence Skipping Deploy to CD.")
         } 
