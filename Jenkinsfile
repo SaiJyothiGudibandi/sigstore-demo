@@ -5,7 +5,7 @@ import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 
 def build_metaData
 def config = [
-    "node" : "jenkins-slave"
+    "node" : "jenkins-slave",
     "dockerStatus" : "",
     "helmStatus" : "",
 ]
