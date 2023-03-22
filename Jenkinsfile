@@ -158,18 +158,27 @@ node("jenkins-slave"){
             echo("----- BEGIN Verfication -----")
             dockerStatus = cosignVerifyAttestation(imageName)
             helmStatus = cosignVerifyAttestionBlob(helmChart)
-            echo("status is ${helmStatus} ${dockerStatus}")
-            echo("----- COMPLETED Helm Publish -----")
+            if (dockerStatus == "FAILED" || helmStatus == "FAILED"){
+                catchError(stageResult: 'FAILURE') {
+                    echo("status is ${helmStatus} ${dockerStatus}")
+                    echo("Verification Failed.")
+                }
+            }else{
+                echo("----- COMPLETED Helm Publish -----")
+            }
         }
 	}
 
     // Deploy to CD
 	stage('Deploy to CD') {
-        echo("----- BEGIN Deploy to CD -----")
-        if (dockerStatus == "FAILED" || helmStatus == "FAILED")
-                Utils.markStageSkippedForConditional("Deploy to CD")
-        echo("Deploy to CD is in progress")
-        echo("----- COMPLETED Deploy to CD -----")
+        if (dockerStatus == "FAILED" || helmStatus == "FAILED"){
+            echo("----- SKIP Deploy to CD -----")
+            Utils.markStageSkippedForConditional("Deploy to CD")
+        }else{
+            echo("----- BEGIN Deploy to CD -----")
+            echo("Deploy to CD is in progress")
+            echo("----- COMPLETED Deploy to CD -----")
+        }
     }
 }
 
@@ -234,10 +243,8 @@ def cosignVerifyAttestation(imageName){
             }
         }
     }catch(Exception ex){
-        catchError(stageResult: 'FAILURE') {
-            dockerStatus = "FAILED"
-            echo("Verification of Docker failed as the artifact is tampered, hence Skipping Deploy to CD.")
-        }
+        dockerStatus = "FAILED"
+        echo("Verification of Docker failed as the artifact is tampered, hence Skipping Deploy to CD.")
     }finally{
         return dockerStatus
     }
@@ -287,10 +294,8 @@ def cosignVerifyAttestionBlob(helmChart){
             sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign verify-blob-attestation --key '${cosign_pub_key}' --type \"spdxjson\" ${helmChart} --signature ${helmChart}-predicate.sig --rekor-url 'https://rekor.sigstore.dev'")
         }
     }catch(Exception ex){
-        catchError(stageResult: 'FAILURE') {
-            helmStatus = "FAILED"
-            echo("Verification of Helm chart failed as the artifact is tampered, hence Skipping Deploy to CD.")
-        } 
+        helmStatus = "FAILED"
+        echo("Verification of Helm chart failed as the artifact is tampered, hence Skipping Deploy to CD.")
     }finally{
         return helmStatus
     }
