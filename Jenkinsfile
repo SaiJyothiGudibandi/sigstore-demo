@@ -1,6 +1,3 @@
-// Credential ID:
-// cosign-key (private key)
-// cosign-pub (public key)
 import org.jenkinsci.plugins.pipeline.modeldefinition.Utils
 
 def build_metaData
@@ -17,10 +14,9 @@ node("jenkins-slave"){
     // Chekout
 	stage("Checkout"){
 		cleanWs()
-		def scmVars = checkout scmGit(branches: [[name: '*/feature-3']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
+		def scmVars = checkout scmGit(branches: [[name: '*/feature-nga-demo-1']], extensions: [], userRemoteConfigs: [[credentialsId: 'devops-team-92', url: 'https://github.com/SaiJyothiGudibandi/sigstore-demo.git']])
 		def git_commit = getAuthorEmailForCommit()
 		def committed_by = getAuthorEmailForCommit("${scmVars.GIT_COMMIT}")
-		echo "## At committed_by : ${committed_by}"
 		build_metaData = ["environment" : "${envType}", "type": "checkout", "stage_properties": [ "jenkins": ["ci": [ "build_url": "${env.BUILD_URL}", "job_name": "${env.JOB_NAME}".replaceAll("\\s", "-"), "build_number": "${env.BUILD_ID}", "user": "${env.USER}"]], "scm": ["git_url": "${scmVars.GIT_URL}", "branch_name": "${env.BRANCH_NAME}", "committed_by": "${committed_by}"]]]
 		helmPredicateContents.put("Checkout", build_metaData)
 		createMetadataFile("Checkout", build_metaData)
