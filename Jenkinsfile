@@ -154,18 +154,16 @@ node("jenkins-slave"){
 
     // Cosign Verfication
 	stage('Verfication') {
-		docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
-            echo("----- BEGIN Verfication -----")
-            dockerStatus = cosignVerifyAttestation(imageName)
-            helmStatus = cosignVerifyAttestionBlob(helmChart)
-            if (dockerStatus == "FAILED" || helmStatus == "FAILED"){
-                catchError(stageResult: 'FAILURE') {
-                    echo("status is ${helmStatus} ${dockerStatus}")
-                    echo("Verification Failed.")
-                }
-            }else{
+        try{
+            docker.image('kartikjena33/cosign:latest').inside('-u 0:0 '){
+                echo("----- BEGIN Verfication -----")
+                dockerStatus = cosignVerifyAttestation(imageName)
+                helmStatus = cosignVerifyAttestionBlob(helmChart)
                 echo("----- COMPLETED Helm Publish -----")
             }
+        }catchError(stageResult: 'FAILURE') {
+            echo("status is ${helmStatus} ${dockerStatus}")
+            echo("Verification Failed.")
         }
 	}
 
@@ -244,7 +242,7 @@ def cosignVerifyAttestation(imageName){
         }
     }catch(Exception ex){
         dockerStatus = "FAILED"
-        echo("Verification of Docker failed as the artifact is tampered, hence Skipping Deploy to CD.")
+        error("Verification of Docker failed as the artifact is tampered, hence Skipping Deploy to CD.")
     }finally{
         return dockerStatus
     }
@@ -295,7 +293,7 @@ def cosignVerifyAttestionBlob(helmChart){
         }
     }catch(Exception ex){
         helmStatus = "FAILED"
-        echo("Verification of Helm chart failed as the artifact is tampered, hence Skipping Deploy to CD.")
+        error("Verification of Helm chart failed as the artifact is tampered, hence Skipping Deploy to CD.")
     }finally{
         return helmStatus
     }
