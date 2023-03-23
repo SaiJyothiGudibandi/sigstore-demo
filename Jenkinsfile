@@ -132,6 +132,7 @@ node("jenkins-slave"){
     stage('Tampering docker artifact') {
 	    sh "gcloud artifacts docker images delete ${imageName} --quiet"
 	    sh("docker rmi -f ${imageName}")
+	    sh "docker build -t ${imageName} -f Dockerfile-new ."
 	    sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
 	    sh "docker push ${imageName}"
 	}
