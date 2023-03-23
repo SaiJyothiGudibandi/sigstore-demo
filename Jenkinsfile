@@ -74,8 +74,8 @@ node("jenkins-slave"){
 		jarNameList.each{ jarName ->
 			cosignVerifyArtifact("target/${jarName}")
 		}
-		sh 'docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 .'
-		build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":[ "running_on": "master", "application_image": "APPROVED", "command_executed": "docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 ."]]
+		sh "docker build -t ${imageName} ."
+		build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":[ "running_on": "master", "application_image": "APPROVED", "command_executed": "docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:2.0.0 ."]]
 		helmPredicateContents.put("Docker-Build", build_metaData)
 		createMetadataFile("Docker-Build", build_metaData)
 		echo("----- COMPLETED Docker Build -----")
@@ -86,8 +86,8 @@ node("jenkins-slave"){
 		echo("----- BEGIN Docker Publish-----")
 		withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
 			sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
-			sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
-			build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":["credentials": "docker-login", "url": "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0", "checksum": "f5f92ef4e533ecffa18d058bee91cd818de3ba8145bfa63e19c0a7da31bca5df"]]
+			sh "docker push ${imageName}"
+			build_metaData = ["environment" : "${envType}", "type": "dockerbuild", "stage_properties":["credentials": "docker-login", "url": "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:2.0.0", "checksum": "f5f92ef4e533ecffa18d058bee91cd818de3ba8145bfa63e19c0a7da31bca5df"]]
 			helmPredicateContents.put("Docker-Publish", build_metaData)
 			createMetadataFile("Docker-Publish", build_metaData)
 			cosignClean(imageName)
