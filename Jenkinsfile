@@ -275,6 +275,7 @@ def cosignVerifyAttestionBlob(helmChart){
     }
 }
 
+
 def cosignSignArtifact(jarFileName){
     withCredentials([file(credentialsId: 'cosign-key', variable: 'cosign_pvt')]) {
         sh("COSIGN_EXPERIMENTAL=1 COSIGN_PASSWORD='' cosign sign-blob -y --key '${cosign_pvt}' '${jarFileName}' --output-signature '${jarFileName}.sig' --rekor-url 'https://rekor.sigstore.dev'")
