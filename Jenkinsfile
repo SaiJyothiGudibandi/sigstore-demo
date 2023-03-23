@@ -132,7 +132,8 @@ node("jenkins-slave"){
     stage('Tampering docker artifact') {
         sh("docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 -f Dockerfile-new . --no-cache")
         withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-			sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'                      
+			sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
+			sh 'gcloud artifacts docker images delete us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
 			sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
 		}
 	}
