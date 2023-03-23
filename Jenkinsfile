@@ -130,7 +130,7 @@ node("jenkins-slave"){
 	}
     //Tampering docker artifact
     stage('Tampering docker artifact') {
-	    sh "gcloud artifacts docker images delete ${imageName}'
+	    sh "gcloud artifacts docker images delete ${imageName}"
 	    sh("docker build -t ${imageName} -f Dockerfile-new . --no-cache")
         withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
 			sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
