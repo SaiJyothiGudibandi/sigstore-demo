@@ -1,2 +1,3 @@
-FROM alpine
-CMD ["echo", "Hazardous code!"]
+FROM openjdk:8
+COPY target/*.jar MavenHelloWorld.jar
+ENTRYPOINT ["sh", "-c", "java -jar /MavenHelloWorld.jar"]
