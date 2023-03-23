@@ -7,7 +7,7 @@ def build_metaData
 
 node("jenkins-slave"){
     def envType = getEnvtype("${env.BRANCH_NAME}")
-    def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0"
+    def imageName = "us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:2.0.0"
     def helmChart = "mychart/sigstore-demo-1.0.5.tgz"
     def helmPredicateContents =[:]
     def jarNameList = []
@@ -130,11 +130,10 @@ node("jenkins-slave"){
 	}
     //Tampering docker artifact
     stage('Tampering docker artifact') {
-        sh("docker build -t us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0 -f Dockerfile-new . --no-cache")
+	    sh("docker build -t ${imageName} -f Dockerfile-new . --no-cache")
         withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
 			sh 'gcloud auth configure-docker us-central1-docker.pkg.dev --quiet'
-			sh 'gcloud artifacts docker images delete us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
-			sh 'docker push us-central1-docker.pkg.dev/citric-nimbus-377218/docker-dev-local/sigstore-demo-image:1.0.0'
+			sh "docker push ${imageName}"
 		}
 	}
 
